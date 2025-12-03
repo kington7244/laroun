@@ -40,8 +40,13 @@ export default function PrivacyPolicyPage() {
                         </h2>
                         <p className="text-gray-700 mb-4">
                             {language === "th" 
-                                ? "Laroun (\"เรา\", \"ของเรา\") ให้ความสำคัญกับความเป็นส่วนตัวของคุณ นโยบายความเป็นส่วนตัวนี้อธิบายวิธีที่เราเก็บรวบรวม ใช้ และปกป้องข้อมูลส่วนบุคคลของคุณเมื่อคุณใช้บริการของเรา"
-                                : "Laroun (\"we\", \"our\", \"us\") respects your privacy. This Privacy Policy explains how we collect, use, and protect your personal information when you use our services."}
+                                ? "Laroun (\"เรา\", \"ของเรา\") ให้ความสำคัญกับความเป็นส่วนตัวของคุณ นโยบายความเป็นส่วนตัวนี้อธิบายวิธีที่เราเก็บรวบรวม ใช้ และปกป้องข้อมูลส่วนบุคคลของคุณเมื่อคุณใช้บริการของเรา รวมถึงการเชื่อมต่อกับ Facebook/Meta APIs"
+                                : "Laroun (\"we\", \"our\", \"us\") respects your privacy. This Privacy Policy explains how we collect, use, and protect your personal information when you use our services, including integration with Facebook/Meta APIs."}
+                        </p>
+                        <p className="text-gray-700 mb-4">
+                            {language === "th" 
+                                ? "โดยการใช้บริการของเรา คุณยินยอมให้มีการเก็บรวบรวมและใช้ข้อมูลตามนโยบายนี้"
+                                : "By using our services, you consent to the collection and use of information in accordance with this policy."}
                         </p>
                     </section>
 
@@ -54,7 +59,9 @@ export default function PrivacyPolicyPage() {
                         </p>
                         <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
                             <li>{language === "th" ? "ข้อมูลบัญชี (ชื่อ อีเมล รหัสผ่านที่เข้ารหัส)" : "Account information (name, email, encrypted password)"}</li>
-                            <li>{language === "th" ? "ข้อมูลการเชื่อมต่อ Facebook Ads" : "Facebook Ads connection data"}</li>
+                            <li>{language === "th" ? "ข้อมูลโปรไฟล์ Facebook (ชื่อ รหัสผู้ใช้ อีเมล)" : "Facebook profile information (name, user ID, email)"}</li>
+                            <li>{language === "th" ? "ข้อมูล Facebook Ads (บัญชีโฆษณา แคมเปญ ข้อมูลเชิงลึก การใช้จ่าย)" : "Facebook Ads data (ad accounts, campaigns, insights, spend)"}</li>
+                            <li>{language === "th" ? "Access tokens สำหรับการเชื่อมต่อ API" : "Access tokens for API integration"}</li>
                             <li>{language === "th" ? "ข้อมูลการใช้งานและการวิเคราะห์" : "Usage data and analytics"}</li>
                             <li>{language === "th" ? "ข้อมูลอุปกรณ์และเบราว์เซอร์" : "Device and browser information"}</li>
                         </ul>
@@ -62,22 +69,41 @@ export default function PrivacyPolicyPage() {
 
                     <section className="mb-8">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            {language === "th" ? "3. วิธีที่เราใช้ข้อมูลของคุณ" : "3. How We Use Your Information"}
+                            {language === "th" ? "3. การใช้ข้อมูล Facebook" : "3. Facebook Data Usage"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" ? "เราใช้ข้อมูลของคุณเพื่อ:" : "We use your information to:"}
+                            {language === "th" 
+                                ? "เมื่อคุณเชื่อมต่อบัญชี Facebook ของคุณ เราจะ:"
+                                : "When you connect your Facebook account, we:"}
                         </p>
                         <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
-                            <li>{language === "th" ? "ให้บริการและปรับปรุงแพลตฟอร์มของเรา" : "Provide and improve our platform"}</li>
-                            <li>{language === "th" ? "จัดการบัญชีและการตรวจสอบสิทธิ์ของคุณ" : "Manage your account and authentication"}</li>
-                            <li>{language === "th" ? "สื่อสารกับคุณเกี่ยวกับบริการของเรา" : "Communicate with you about our services"}</li>
-                            <li>{language === "th" ? "วิเคราะห์การใช้งานเพื่อปรับปรุงประสบการณ์ผู้ใช้" : "Analyze usage to improve user experience"}</li>
+                            <li>{language === "th" ? "เข้าถึงข้อมูลบัญชีโฆษณาที่คุณอนุญาตเท่านั้น" : "Only access ad account data that you authorize"}</li>
+                            <li>{language === "th" ? "ใช้ข้อมูลเพื่อแสดงสถิติและรายงานโฆษณาของคุณ" : "Use data to display your ad statistics and reports"}</li>
+                            <li>{language === "th" ? "ไม่แชร์ข้อมูล Facebook ของคุณกับบุคคลที่สาม" : "Do not share your Facebook data with third parties"}</li>
+                            <li>{language === "th" ? "ไม่ขายหรือใช้ข้อมูลเพื่อการโฆษณา" : "Do not sell or use data for advertising purposes"}</li>
+                            <li>{language === "th" ? "จัดเก็บ access tokens อย่างปลอดภัยด้วยการเข้ารหัส" : "Store access tokens securely with encryption"}</li>
                         </ul>
                     </section>
 
                     <section className="mb-8">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            {language === "th" ? "4. การแบ่งปันข้อมูล" : "4. Information Sharing"}
+                            {language === "th" ? "4. วิธีที่เราใช้ข้อมูลของคุณ" : "4. How We Use Your Information"}
+                        </h2>
+                        <p className="text-gray-700 mb-4">
+                            {language === "th" ? "เราใช้ข้อมูลของคุณเพื่อ:" : "We use your information to:"}
+                        </p>
+                        <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                            <li>{language === "th" ? "ให้บริการจัดการโฆษณา Facebook ของเรา" : "Provide our Facebook ads management services"}</li>
+                            <li>{language === "th" ? "แสดงข้อมูลเชิงลึกและรายงานประสิทธิภาพโฆษณา" : "Display ad performance insights and reports"}</li>
+                            <li>{language === "th" ? "จัดการบัญชีและการตรวจสอบสิทธิ์ของคุณ" : "Manage your account and authentication"}</li>
+                            <li>{language === "th" ? "สื่อสารกับคุณเกี่ยวกับบริการของเรา" : "Communicate with you about our services"}</li>
+                            <li>{language === "th" ? "ปรับปรุงและพัฒนาแพลตฟอร์มของเรา" : "Improve and develop our platform"}</li>
+                        </ul>
+                    </section>
+
+                    <section className="mb-8">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                            {language === "th" ? "5. การแบ่งปันข้อมูล" : "5. Information Sharing"}
                         </h2>
                         <p className="text-gray-700 mb-4">
                             {language === "th" 
@@ -85,26 +111,53 @@ export default function PrivacyPolicyPage() {
                                 : "We do not sell your personal information. We may share information with:"}
                         </p>
                         <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
-                            <li>{language === "th" ? "ผู้ให้บริการที่ช่วยเราดำเนินงานแพลตฟอร์ม" : "Service providers who help us operate the platform"}</li>
-                            <li>{language === "th" ? "Facebook/Meta เพื่อการเชื่อมต่อ API" : "Facebook/Meta for API integration"}</li>
+                            <li>{language === "th" ? "Facebook/Meta ผ่าน APIs อย่างเป็นทางการเท่านั้น" : "Facebook/Meta through official APIs only"}</li>
+                            <li>{language === "th" ? "ผู้ให้บริการโครงสร้างพื้นฐาน (เซิร์ฟเวอร์ ฐานข้อมูล)" : "Infrastructure service providers (servers, databases)"}</li>
                             <li>{language === "th" ? "หน่วยงานกำกับดูแลเมื่อกฎหมายกำหนด" : "Legal authorities when required by law"}</li>
                         </ul>
                     </section>
 
                     <section className="mb-8">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            {language === "th" ? "5. ความปลอดภัยของข้อมูล" : "5. Data Security"}
+                            {language === "th" ? "6. การเก็บรักษาและลบข้อมูล" : "6. Data Retention and Deletion"}
                         </h2>
                         <p className="text-gray-700 mb-4">
                             {language === "th" 
-                                ? "เราใช้มาตรการรักษาความปลอดภัยที่เหมาะสมเพื่อปกป้องข้อมูลของคุณ รวมถึงการเข้ารหัส การควบคุมการเข้าถึง และการตรวจสอบความปลอดภัยเป็นประจำ"
-                                : "We implement appropriate security measures to protect your data, including encryption, access controls, and regular security audits."}
+                                ? "เราเก็บรักษาข้อมูลของคุณตราบเท่าที่บัญชีของคุณยังใช้งานอยู่ หรือตามที่จำเป็นเพื่อให้บริการแก่คุณ"
+                                : "We retain your data as long as your account is active or as needed to provide you services."}
                         </p>
+                        <p className="text-gray-700 mb-4">
+                            {language === "th" 
+                                ? "คุณสามารถขอลบข้อมูลได้ตลอดเวลาโดย:"
+                                : "You can request data deletion at any time by:"}
+                        </p>
+                        <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                            <li>{language === "th" ? "ยกเลิกการเชื่อมต่อ Facebook จากการตั้งค่าบัญชี" : "Disconnecting Facebook from account settings"}</li>
+                            <li>{language === "th" ? "ติดต่อเราเพื่อขอลบบัญชี" : "Contacting us to request account deletion"}</li>
+                            <li>{language === "th" ? "เราจะลบข้อมูลทั้งหมดภายใน 30 วัน" : "We will delete all data within 30 days"}</li>
+                        </ul>
                     </section>
 
                     <section className="mb-8">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            {language === "th" ? "6. สิทธิ์ของคุณ" : "6. Your Rights"}
+                            {language === "th" ? "7. ความปลอดภัยของข้อมูล" : "7. Data Security"}
+                        </h2>
+                        <p className="text-gray-700 mb-4">
+                            {language === "th" 
+                                ? "เราใช้มาตรการรักษาความปลอดภัยที่เหมาะสมเพื่อปกป้องข้อมูลของคุณ:"
+                                : "We implement appropriate security measures to protect your data:"}
+                        </p>
+                        <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                            <li>{language === "th" ? "การเข้ารหัส SSL/TLS สำหรับการส่งข้อมูล" : "SSL/TLS encryption for data transmission"}</li>
+                            <li>{language === "th" ? "การเข้ารหัสข้อมูลที่จัดเก็บ" : "Encryption of stored data"}</li>
+                            <li>{language === "th" ? "การควบคุมการเข้าถึงอย่างเข้มงวด" : "Strict access controls"}</li>
+                            <li>{language === "th" ? "การตรวจสอบความปลอดภัยเป็นประจำ" : "Regular security audits"}</li>
+                        </ul>
+                    </section>
+
+                    <section className="mb-8">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                            {language === "th" ? "8. สิทธิ์ของคุณ" : "8. Your Rights"}
                         </h2>
                         <p className="text-gray-700 mb-4">
                             {language === "th" ? "คุณมีสิทธิ์ในการ:" : "You have the right to:"}
@@ -113,44 +166,73 @@ export default function PrivacyPolicyPage() {
                             <li>{language === "th" ? "เข้าถึงข้อมูลส่วนบุคคลของคุณ" : "Access your personal data"}</li>
                             <li>{language === "th" ? "แก้ไขข้อมูลที่ไม่ถูกต้อง" : "Correct inaccurate data"}</li>
                             <li>{language === "th" ? "ขอให้ลบข้อมูลของคุณ" : "Request deletion of your data"}</li>
+                            <li>{language === "th" ? "ยกเลิกการเชื่อมต่อ Facebook ได้ตลอดเวลา" : "Disconnect Facebook at any time"}</li>
                             <li>{language === "th" ? "ถอนความยินยอมได้ตลอดเวลา" : "Withdraw consent at any time"}</li>
+                            <li>{language === "th" ? "ร้องเรียนต่อหน่วยงานกำกับดูแล" : "Lodge a complaint with a regulatory authority"}</li>
                         </ul>
                     </section>
 
                     <section className="mb-8">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            {language === "th" ? "7. คุกกี้" : "7. Cookies"}
+                            {language === "th" ? "9. คุกกี้และเทคโนโลยีการติดตาม" : "9. Cookies and Tracking Technologies"}
                         </h2>
                         <p className="text-gray-700 mb-4">
                             {language === "th" 
-                                ? "เราใช้คุกกี้เพื่อปรับปรุงประสบการณ์ของคุณ คุณสามารถจัดการการตั้งค่าคุกกี้ในเบราว์เซอร์ของคุณได้"
-                                : "We use cookies to improve your experience. You can manage cookie settings in your browser."}
+                                ? "เราใช้คุกกี้เพื่อ:"
+                                : "We use cookies to:"}
+                        </p>
+                        <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                            <li>{language === "th" ? "รักษาสถานะการเข้าสู่ระบบของคุณ" : "Maintain your login session"}</li>
+                            <li>{language === "th" ? "จดจำการตั้งค่าของคุณ" : "Remember your preferences"}</li>
+                            <li>{language === "th" ? "วิเคราะห์การใช้งานเว็บไซต์" : "Analyze website usage"}</li>
+                        </ul>
+                        <p className="text-gray-700 mt-4">
+                            {language === "th" 
+                                ? "คุณสามารถจัดการการตั้งค่าคุกกี้ในเบราว์เซอร์ของคุณได้"
+                                : "You can manage cookie settings in your browser."}
                         </p>
                     </section>
 
                     <section className="mb-8">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            {language === "th" ? "8. การเปลี่ยนแปลงนโยบาย" : "8. Policy Changes"}
+                            {language === "th" ? "10. การเปลี่ยนแปลงนโยบาย" : "10. Policy Changes"}
                         </h2>
                         <p className="text-gray-700 mb-4">
                             {language === "th" 
-                                ? "เราอาจอัปเดตนโยบายนี้เป็นครั้งคราว เราจะแจ้งให้คุณทราบถึงการเปลี่ยนแปลงที่สำคัญผ่านทางอีเมลหรือประกาศบนเว็บไซต์ของเรา"
-                                : "We may update this policy periodically. We will notify you of significant changes via email or a notice on our website."}
+                                ? "เราอาจอัปเดตนโยบายนี้เป็นครั้งคราว เราจะแจ้งให้คุณทราบถึงการเปลี่ยนแปลงที่สำคัญผ่านทางอีเมลหรือประกาศบนเว็บไซต์ของเรา การใช้บริการต่อหลังจากมีการเปลี่ยนแปลงถือว่าคุณยอมรับนโยบายใหม่"
+                                : "We may update this policy periodically. We will notify you of significant changes via email or a notice on our website. Continued use of our services after changes constitutes acceptance of the new policy."}
                         </p>
                     </section>
 
                     <section className="mb-8">
                         <h2 className="text-xl font-semibold text-gray-900 mb-4">
-                            {language === "th" ? "9. ติดต่อเรา" : "9. Contact Us"}
+                            {language === "th" ? "11. ติดต่อเรา" : "11. Contact Us"}
                         </h2>
                         <p className="text-gray-700 mb-4">
                             {language === "th" 
-                                ? "หากคุณมีคำถามเกี่ยวกับนโยบายความเป็นส่วนตัวนี้ กรุณาติดต่อเราที่:"
-                                : "If you have questions about this Privacy Policy, please contact us at:"}
+                                ? "หากคุณมีคำถามเกี่ยวกับนโยบายความเป็นส่วนตัวนี้ หรือต้องการใช้สิทธิ์เกี่ยวกับข้อมูลของคุณ กรุณาติดต่อเราที่:"
+                                : "If you have questions about this Privacy Policy or want to exercise your data rights, please contact us at:"}
                         </p>
-                        <p className="text-gray-700">
-                            Email: <a href="mailto:privacy@laroun.com" className="text-blue-600 hover:underline">privacy@laroun.com</a>
+                        <div className="text-gray-700 space-y-2">
+                            <p><strong>Email:</strong> <a href="mailto:privacy@laroun.com" className="text-blue-600 hover:underline">privacy@laroun.com</a></p>
+                            <p><strong>{language === "th" ? "เว็บไซต์" : "Website"}:</strong> <a href="https://www.laroun.com" className="text-blue-600 hover:underline">www.laroun.com</a></p>
+                        </div>
+                    </section>
+
+                    <section className="mb-8 p-4 bg-gray-100 rounded-lg">
+                        <h2 className="text-xl font-semibold text-gray-900 mb-4">
+                            {language === "th" ? "12. ข้อมูลสำหรับ Facebook/Meta" : "12. Facebook/Meta Compliance"}
+                        </h2>
+                        <p className="text-gray-700 mb-4">
+                            {language === "th" 
+                                ? "แอปพลิเคชันนี้ใช้ Facebook Login และ Facebook Marketing API แอปนี้ปฏิบัติตาม:"
+                                : "This application uses Facebook Login and Facebook Marketing API. This app complies with:"}
                         </p>
+                        <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
+                            <li><a href="https://www.facebook.com/policy.php" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Facebook Data Policy</a></li>
+                            <li><a href="https://developers.facebook.com/terms/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Meta Platform Terms</a></li>
+                            <li><a href="https://developers.facebook.com/devpolicy/" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Meta Developer Policies</a></li>
+                        </ul>
                     </section>
                 </div>
 
@@ -164,7 +246,7 @@ export default function PrivacyPolicyPage() {
             {/* Footer */}
             <footer className="bg-white border-t py-6">
                 <div className="container mx-auto px-6 text-center text-sm text-gray-500">
-                    © 2024 Laroun. {language === "th" ? "สงวนลิขสิทธิ์." : "All rights reserved."}
+                    © 2025 Laroun. {language === "th" ? "สงวนลิขสิทธิ์." : "All rights reserved."}
                 </div>
             </footer>
         </div>
