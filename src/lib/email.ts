@@ -1,6 +1,7 @@
 import { Resend } from 'resend'
 
-const resend = new Resend(process.env.RESEND_API_KEY)
+// Only initialize Resend if API key is available
+const resend = process.env.RESEND_API_KEY ? new Resend(process.env.RESEND_API_KEY) : null
 
 interface SendPasswordResetEmailParams {
     email: string
@@ -8,6 +9,11 @@ interface SendPasswordResetEmailParams {
 }
 
 export async function sendPasswordResetEmail({ email, token }: SendPasswordResetEmailParams) {
+    if (!resend) {
+        console.error('RESEND_API_KEY is not configured')
+        throw new Error('Email service is not configured')
+    }
+
     const resetLink = `${process.env.NEXTAUTH_URL}/reset-password?token=${token}`
 
     try {
