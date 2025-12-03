@@ -36,6 +36,7 @@ import { DateRange } from "react-day-picker"
 
 // Theme color classes mapping
 const themeColors = {
+    sky: { active: 'bg-sky-500 text-white', inactive: 'bg-sky-50 text-sky-600 dark:bg-sky-950 dark:text-sky-400' },
     violet: { active: 'bg-violet-500 text-white', inactive: 'bg-violet-50 text-violet-600 dark:bg-violet-950 dark:text-violet-400' },
     blue: { active: 'bg-blue-500 text-white', inactive: 'bg-blue-50 text-blue-600 dark:bg-blue-950 dark:text-blue-400' },
     indigo: { active: 'bg-indigo-500 text-white', inactive: 'bg-indigo-50 text-indigo-600 dark:bg-indigo-950 dark:text-indigo-400' },
@@ -46,6 +47,9 @@ const themeColors = {
     orange: { active: 'bg-orange-500 text-white', inactive: 'bg-orange-50 text-orange-600 dark:bg-orange-950 dark:text-orange-400' },
     rose: { active: 'bg-rose-500 text-white', inactive: 'bg-rose-50 text-rose-600 dark:bg-rose-950 dark:text-rose-400' },
     pink: { active: 'bg-pink-500 text-white', inactive: 'bg-pink-50 text-pink-600 dark:bg-pink-950 dark:text-pink-400' },
+    slate: { active: 'bg-slate-500 text-white', inactive: 'bg-slate-50 text-slate-600 dark:bg-slate-950 dark:text-slate-400' },
+    emerald: { active: 'bg-emerald-500 text-white', inactive: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950 dark:text-emerald-400' },
+    lavender: { active: 'bg-purple-400 text-white', inactive: 'bg-purple-50 text-purple-500 dark:bg-purple-950 dark:text-purple-400' },
 }
 
 interface PaymentTransaction {
