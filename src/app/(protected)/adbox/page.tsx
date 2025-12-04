@@ -311,43 +311,43 @@ export default function AdBoxPage() {
                                 return (
                                     <div
                                         key={conv.id}
-                                        className={`p-3 rounded-lg cursor-pointer transition-colors mb-1 ${
+                                        className={`p-2 rounded-lg cursor-pointer transition-colors mb-1 ${
                                             isSelected 
                                                 ? 'bg-primary/10' 
                                                 : 'hover:bg-muted'
                                         }`}
                                         onClick={() => selectConversation(conv)}
                                     >
-                                        <div className="flex gap-3">
-                                            <Avatar className="h-10 w-10">
-                                                <AvatarFallback>
+                                        <div className="flex gap-2">
+                                            <Avatar className="h-9 w-9 shrink-0">
+                                                <AvatarFallback className="text-sm">
                                                     {(participant?.name || 'U')[0]}
                                                 </AvatarFallback>
                                             </Avatar>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center justify-between">
-                                                    <span className={`font-medium truncate ${
+                                            <div className="flex-1 min-w-0 overflow-hidden">
+                                                <div className="flex items-center justify-between gap-1">
+                                                    <span className={`font-medium truncate text-sm ${
                                                         conv.unread_count > 0 ? 'text-foreground' : 'text-muted-foreground'
                                                     }`}>
                                                         {participant?.name || 'Facebook User'}
                                                     </span>
-                                                    <span className="text-xs text-muted-foreground">
+                                                    <span className="text-xs text-muted-foreground shrink-0">
                                                         {formatTime(conv.updated_time)}
                                                     </span>
                                                 </div>
-                                                <p className={`text-sm truncate ${
+                                                <p className={`text-xs truncate ${
                                                     conv.unread_count > 0 
                                                         ? 'text-foreground font-medium' 
                                                         : 'text-muted-foreground'
                                                 }`}>
                                                     {conv.snippet || 'No message preview'}
                                                 </p>
-                                                <div className="flex items-center justify-between mt-1">
-                                                    <span className="text-xs text-muted-foreground truncate">
+                                                <div className="flex items-center justify-between mt-0.5 gap-1">
+                                                    <span className="text-xs text-muted-foreground truncate flex-1">
                                                         {getPageName(conv.pageId)}
                                                     </span>
                                                     {conv.unread_count > 0 && (
-                                                        <span className="bg-primary text-primary-foreground text-xs px-2 py-0.5 rounded-full">
+                                                        <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full shrink-0">
                                                             {conv.unread_count}
                                                         </span>
                                                     )}
