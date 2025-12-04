@@ -292,7 +292,8 @@ export default function AdBoxPage() {
 
                 {/* Conversations */}
                 <div className="flex-1 overflow-hidden min-h-0">
-                    <ScrollArea className="h-full">
+                    <ScrollArea className="h-full w-full">
+                        <div className="pr-3">
                     {loadingChat ? (
                         <div className="flex items-center justify-center py-8">
                             <Loader2 className="h-6 w-6 animate-spin" />
@@ -303,7 +304,7 @@ export default function AdBoxPage() {
                             <p>No conversations found</p>
                         </div>
                     ) : (
-                        <div className="p-2">
+                        <div className="p-2 pr-1">
                             {filteredConversations.map(conv => {
                                 const participant = conv.participants?.data?.[0];
                                 const isSelected = selectedConversation?.id === conv.id;
@@ -359,6 +360,7 @@ export default function AdBoxPage() {
                             })}
                         </div>
                     )}
+                        </div>
                     </ScrollArea>
                 </div>
             </Card>
