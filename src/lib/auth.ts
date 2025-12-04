@@ -6,7 +6,7 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { db } from "@/lib/db"
 import { compare } from "bcryptjs"
 import { logActivity } from "@/lib/activity-log"
-import { Adapter } from "next-auth/adapters"
+import { Adapter, AdapterUser } from "next-auth/adapters"
 
 // Custom adapter that sets role to 'host' for new users
 function CustomPrismaAdapter(): Adapter {
@@ -14,7 +14,7 @@ function CustomPrismaAdapter(): Adapter {
     
     return {
         ...prismaAdapter,
-        createUser: async (data) => {
+        createUser: async (data: Omit<AdapterUser, "id">) => {
             // Check if user already exists (was pre-created by host adding to team)
             const existingUser = await db.user.findUnique({
                 where: { email: data.email! }
