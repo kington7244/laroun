@@ -91,7 +91,7 @@ export default function SettingsPage() {
         
         const loadFacebookAccount = async () => {
             try {
-                const res = await fetch("/api/auth/facebook-status")
+                const res = await fetch("/api/settings/facebook-account")
                 if (res.ok) {
                     const data = await res.json()
                     setFacebookAccount(data)

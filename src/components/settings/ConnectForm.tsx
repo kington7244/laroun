@@ -37,7 +37,7 @@ export function ConnectForm({ facebookAccount }: ConnectFormProps) {
     const handleConnect = async () => {
         setIsLoading(true)
         try {
-            await signIn("facebook", { callbackUrl: "/settings/connect" })
+            await signIn("facebook", { callbackUrl: "/settings?tab=connect" })
         } catch (error) {
             toast.error("Failed to connect to Facebook")
         } finally {
