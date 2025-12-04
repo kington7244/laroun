@@ -1,7 +1,7 @@
 ﻿import { NextRequest, NextResponse } from 'next/server';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
-import { db } from '@/lib/db';
+import { prisma } from '@/lib/db';
 
 // Mark conversation as read (reset unread count)
 export async function POST(req: NextRequest) {
@@ -17,10 +17,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: 'conversationId is required' }, { status: 400 });
         }
 
-        // Update unread count to 0 and set lastReadAt to now
-        await db.updateConversation(conversationId, { 
-            unreadCount: 0,
-            lastReadAt: new Date()
+        // Update unread count to 0
+        await prisma.conversation.update({
+            where: { id: conversationId },
+            data: { unreadCount: 0 }
         });
 
         return NextResponse.json({ success: true });

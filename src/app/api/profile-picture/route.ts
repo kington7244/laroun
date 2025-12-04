@@ -86,15 +86,15 @@ export async function GET(req: NextRequest) {
         const dbUser = await prisma.user.findUnique({
             // @ts-ignore
             where: { id: session.user.id },
-            select: { facebookPageToken: true }
+            select: { facebookAdToken: true }
         });
 
-        if (!dbUser?.facebookPageToken) {
+        if (!dbUser?.facebookAdToken) {
             return NextResponse.redirect(getFallbackUrl());
         }
 
         // Get Page Access Token (cached)
-        const pageToken = await getPageToken(pageId, dbUser.facebookPageToken);
+        const pageToken = await getPageToken(pageId, dbUser.facebookAdToken);
 
         if (!pageToken) {
             console.log('[ProfilePic] No page access token for page:', pageId);
