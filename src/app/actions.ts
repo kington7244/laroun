@@ -180,6 +180,13 @@ export async function fetchConversations(pages: { id: string, access_token?: str
 
     const userId = (session.user as any).id;
     
+    // Get user role to check if they can see all chats
+    const userRecord = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true }
+    });
+    const canSeeAllChats = userRecord?.role === 'host' || userRecord?.role === 'admin';
+    
     // Get user's own token (each user must connect Facebook)
     const accessToken = await getUserFacebookToken(userId);
 
@@ -430,6 +437,13 @@ export async function sendReply(pageId: string, recipientId: string, messageText
 
     const userId = (session.user as any).id;
     
+    // Get user role to check if they can see all chats
+    const userRecord = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true }
+    });
+    const canSeeAllChats = userRecord?.role === 'host' || userRecord?.role === 'admin';
+    
     // Get user's own token (each user must connect Facebook)
     const accessToken = await getUserFacebookToken(userId);
 
@@ -555,7 +569,8 @@ export async function fetchConversationsFromDB(pageIds: string[]) {
         select: { role: true }
     });
 
-    const isAdmin = user?.role === 'admin';
+    // Host and Admin can see all chats, Staff only sees assigned
+    const canSeeAllChats = user?.role === 'admin';
 
     try {
         // Build where clause based on role
@@ -564,7 +579,7 @@ export async function fetchConversationsFromDB(pageIds: string[]) {
         };
 
         // Staff can only see their assigned conversations
-        if (!isAdmin) {
+        if (!canSeeAllChats) {
             whereClause.assignedToId = userId;
         }
 
