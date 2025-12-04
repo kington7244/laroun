@@ -17,6 +17,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import {
     fetchPages,
     fetchConversations,
+    fetchConversationsFromDB,
     fetchMessages,
     sendReply,
     markConversationRead
@@ -101,11 +102,27 @@ export default function AdBoxPage() {
         try {
             setLoadingChat(true);
             const selectedPages = pages.filter(p => selectedPageIds.includes(p.id));
-            const convs = await fetchConversations(selectedPages);
-            setConversations(convs);
+            
+            // First, try to load from cache (database) for instant display
+            const cachedConvs = await fetchConversationsFromDB(selectedPageIds);
+            if (cachedConvs.length > 0) {
+                setConversations(cachedConvs);
+                setLoadingChat(false);
+                
+                // Then sync from Facebook in background
+                fetchConversations(selectedPages).then(freshConvs => {
+                    if (freshConvs.length > 0) {
+                        setConversations(freshConvs);
+                    }
+                }).catch(e => console.error('Background sync error:', e));
+            } else {
+                // No cache, load from Facebook directly
+                const convs = await fetchConversations(selectedPages);
+                setConversations(convs);
+                setLoadingChat(false);
+            }
         } catch (error) {
             console.error('Error loading conversations:', error);
-        } finally {
             setLoadingChat(false);
         }
     };

@@ -180,58 +180,68 @@ export async function fetchConversations(pages: { id: string, access_token?: str
     }
 
     try {
-        const allConversations: any[] = [];
+        // Fetch all pages in parallel
+        const pageResults = await Promise.all(
+            pages.map(async (page) => {
+                try {
+                    const convs = await getPageConversations(accessToken!, page.id, page.access_token);
+                    return convs.map((conv: any) => {
+                        let participantId: string | null = null;
+                        let participantName = 'Facebook User';
 
-        for (const page of pages) {
-            try {
-                const convs = await getPageConversations(accessToken, page.id, page.access_token);
-                
-                for (const conv of convs) {
-                    let participantId: string | null = null;
-                    let participantName = 'Facebook User';
-
-                    if (conv.participants?.data) {
-                        const userParticipant = conv.participants.data.find((p: any) => p.id !== page.id);
-                        if (userParticipant) {
-                            participantId = userParticipant.id;
-                            participantName = userParticipant.name || 'Facebook User';
+                        if (conv.participants?.data) {
+                            const userParticipant = conv.participants.data.find((p: any) => p.id !== page.id);
+                            if (userParticipant) {
+                                participantId = userParticipant.id;
+                                participantName = userParticipant.name || 'Facebook User';
+                            }
                         }
-                    }
 
-                    // Save to database
-                    await upsertConversation({
-                        pageId: page.id,
-                        participantId: participantId || conv.id,
-                        participantName,
-                        snippet: conv.snippet,
-                        updatedTime: new Date(conv.updated_time),
-                        unreadCount: conv.unread_count || 0,
-                        facebookLink: conv.link
+                        return {
+                            id: conv.id,
+                            pageId: page.id,
+                            snippet: conv.snippet,
+                            updated_time: conv.updated_time,
+                            unread_count: conv.unread_count || 0,
+                            facebookLink: conv.link,
+                            participantId: participantId || conv.id,
+                            participantName,
+                            participants: {
+                                data: [{
+                                    id: participantId || conv.id,
+                                    name: participantName
+                                }]
+                            }
+                        };
                     });
-
-                    allConversations.push({
-                        id: conv.id,
-                        pageId: page.id,
-                        snippet: conv.snippet,
-                        updated_time: conv.updated_time,
-                        unread_count: conv.unread_count || 0,
-                        facebookLink: conv.link,
-                        participants: {
-                            data: [{
-                                id: participantId || conv.id,
-                                name: participantName
-                            }]
-                        }
-                    });
+                } catch (e) {
+                    console.error(`Failed to fetch for page ${page.id}`, e);
+                    return [];
                 }
-            } catch (e) {
-                console.error(`Failed to fetch for page ${page.id}`, e);
-            }
-        }
+            })
+        );
+
+        // Flatten results
+        const allConversations = pageResults.flat();
 
         // Sort by updated time
         allConversations.sort((a, b) => 
             new Date(b.updated_time).getTime() - new Date(a.updated_time).getTime()
+        );
+
+        // Save to database in background (don't await)
+        Promise.all(
+            allConversations.map(conv => 
+                upsertConversation({
+                    pageId: conv.pageId,
+                    participantId: conv.participantId,
+                    participantName: conv.participantName,
+                    snippet: conv.snippet,
+                    updatedTime: new Date(conv.updated_time),
+                    unreadCount: conv.unread_count || 0,
+                    facebookLink: conv.facebookLink
+                }).catch(e => console.error('Failed to save conversation:', e))
+            )
         );
 
         return JSON.parse(JSON.stringify(allConversations));
@@ -345,14 +355,23 @@ export async function fetchConversationsFromDB(pageIds: string[]) {
     if (pageIds.length === 0) return [];
 
     try {
-        // Import getConversations from db
-        const { getConversations } = await import('@/lib/db');
+        // Fetch all pages in parallel
+        const results = await Promise.all(
+            pageIds.map(pageId => 
+                prisma.conversation.findMany({
+                    where: { pageId },
+                    orderBy: { updatedTime: 'desc' },
+                    take: 50 // Limit per page
+                })
+            )
+        );
+
+        const allConversations = results.flat();
         
-        const allConversations = [];
-        for (const pageId of pageIds) {
-            const convs = await getConversations(pageId);
-            allConversations.push(...convs);
-        }
+        // Sort all by updated time
+        allConversations.sort((a, b) => 
+            new Date(b.updatedTime || 0).getTime() - new Date(a.updatedTime || 0).getTime()
+        );
 
         return allConversations.map((c: any) => ({
             id: c.id,
