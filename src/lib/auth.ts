@@ -83,15 +83,21 @@ export const authOptions: NextAuthOptions = {
                 user: {
                     ...session.user,
                     id: token.id,
+                    image: token.picture,
                 },
             }
         },
-        async jwt({ token, user }) {
+        async jwt({ token, user, account, profile }) {
             if (user) {
-                return {
-                    ...token,
-                    id: user.id,
-                }
+                token.id = user.id
+            }
+            // Get image from Google profile
+            if (account?.provider === "google" && profile) {
+                token.picture = (profile as any).picture
+            }
+            // Get image from Facebook profile
+            if (account?.provider === "facebook" && profile) {
+                token.picture = (profile as any).picture?.data?.url || (profile as any).picture
             }
             return token
         },
