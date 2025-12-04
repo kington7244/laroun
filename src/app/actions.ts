@@ -101,10 +101,12 @@ export async function fetchAdAccounts(accessToken: string) {
 export async function fetchPages() {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
+        console.log('[fetchPages] No session');
         return []; // Return empty array if not authenticated
     }
 
     const userId = (session.user as any).id;
+    console.log('[fetchPages] userId:', userId);
     
     // First try to get token from User.facebookAdToken
     const user = await prisma.user.findUnique({ 
@@ -113,6 +115,7 @@ export async function fetchPages() {
     });
 
     let accessToken = user?.facebookAdToken;
+    console.log('[fetchPages] User.facebookAdToken exists:', !!accessToken);
     
     // If no token in User, try to get from Account table (OAuth login)
     if (!accessToken) {
@@ -124,6 +127,7 @@ export async function fetchPages() {
             select: { access_token: true }
         });
         accessToken = account?.access_token || null;
+        console.log('[fetchPages] Account.access_token exists:', !!accessToken);
     }
 
     if (!accessToken) {
@@ -132,10 +136,12 @@ export async function fetchPages() {
     }
 
     try {
+        console.log('[fetchPages] Fetching pages with token...');
         const pages = await getPages(accessToken);
+        console.log('[fetchPages] Found pages:', pages.length);
         return JSON.parse(JSON.stringify(pages));
     } catch (error: any) {
-        console.error('Failed to fetch pages:', error);
+        console.error('[fetchPages] Failed to fetch pages:', error.message);
         return []; // Return empty array on error
     }
 }

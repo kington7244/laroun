@@ -519,12 +519,16 @@ export const getInsights = async (accessToken: string, objectId: string, objectT
 // ===== Facebook Pages API Functions (for AdBox) =====
 
 export async function getPages(accessToken: string) {
+    console.log('[getPages] Calling Facebook API...');
     const response = await fetch(
         `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,category,picture&access_token=${accessToken}`
     )
     const data = await response.json()
     
+    console.log('[getPages] Response:', JSON.stringify(data).slice(0, 500));
+    
     if (data.error) {
+        console.error('[getPages] Facebook error:', data.error);
         throw new Error(data.error.message)
     }
     
