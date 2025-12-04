@@ -9,7 +9,8 @@ import Link from 'next/link';
 import { 
     Search, MessageCircle, RefreshCw, Loader2, Settings, Send, 
     ExternalLink, ChevronRight, X, Ban, Bookmark, Bell, BellOff,
-    Image, FileText, Link2, Calendar, AlertCircle, User
+    Image, FileText, Link2, Calendar, AlertCircle, User, Phone,
+    Mail, MapPin, Tag, Clock, ShoppingBag, CreditCard, Hash
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -61,8 +62,8 @@ export default function AdBoxPage() {
     const [filterStatus, setFilterStatus] = useState<'all' | 'unread' | 'read'>('all');
     const [searchQuery, setSearchQuery] = useState('');
     
-    // Info Panel State
-    const [showInfoPanel, setShowInfoPanel] = useState(false);
+    // Info Panel State - Conversation Info (toggle with user icon)
+    const [showConversationInfo, setShowConversationInfo] = useState(false);
 
     // Load pages on mount
     useEffect(() => {
@@ -420,9 +421,10 @@ export default function AdBoxPage() {
                                     </a>
                                 )}
                                 <Button 
-                                    variant="ghost" 
+                                    variant={showConversationInfo ? "secondary" : "ghost"}
                                     size="icon"
-                                    onClick={() => setShowInfoPanel(!showInfoPanel)}
+                                    onClick={() => setShowConversationInfo(!showConversationInfo)}
+                                    title="ข้อมูลการสนทนา"
                                 >
                                     <User className="h-4 w-4" />
                                 </Button>
@@ -506,102 +508,215 @@ export default function AdBoxPage() {
                 )}
             </Card>
 
-            {/* Conversation Info Panel */}
-            {showInfoPanel && selectedConversation && (
+            {/* Right Panel - Customer Info / Conversation Info */}
+            {selectedConversation && (
                 <Card className="w-72 flex flex-col overflow-hidden shrink-0">
                     <div className="h-full overflow-y-auto">
-                        {/* Header */}
-                        <div className="p-3 border-b flex items-center justify-between">
-                            <span className="font-medium text-sm">ข้อมูลการสนทนา</span>
-                            <Button 
-                                variant="ghost" 
-                                size="icon" 
-                                className="h-7 w-7"
-                                onClick={() => setShowInfoPanel(false)}
-                            >
-                                <X className="h-4 w-4" />
-                            </Button>
-                        </div>
-
-                        {/* Profile */}
-                        <div className="p-4 flex flex-col items-center">
-                            <Avatar className="h-16 w-16 mb-3">
-                                <AvatarFallback className="text-xl">
-                                    {(selectedConversation.participants?.data?.[0]?.name || 'U')[0]}
-                                </AvatarFallback>
-                            </Avatar>
-                            <h3 className="font-semibold text-center">
-                                {selectedConversation.participants?.data?.[0]?.name || 'Facebook User'}
-                            </h3>
-                        </div>
-
-                        {/* Quick Actions */}
-                        <div className="px-4 pb-4">
-                            <div className="flex justify-center gap-4">
-                                {selectedConversation.facebookLink && (
-                                    <a
-                                        href={selectedConversation.facebookLink}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary"
+                        {showConversationInfo ? (
+                            <>
+                                {/* Conversation Info Header */}
+                                <div className="p-3 border-b flex items-center justify-between">
+                                    <span className="font-medium text-sm">ข้อมูลการสนทนา</span>
+                                    <Button 
+                                        variant="ghost" 
+                                        size="icon" 
+                                        className="h-7 w-7"
+                                        onClick={() => setShowConversationInfo(false)}
                                     >
-                                        <div className="h-9 w-9 rounded-full border flex items-center justify-center">
-                                            <ExternalLink className="h-4 w-4" />
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                </div>
+
+                                {/* Profile Summary */}
+                                <div className="p-4 flex items-center gap-3 border-b">
+                                    <Avatar className="h-10 w-10">
+                                        <AvatarFallback>
+                                            {(selectedConversation.participants?.data?.[0]?.name || 'U')[0]}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <div className="min-w-0">
+                                        <h3 className="font-semibold text-sm truncate">
+                                            {selectedConversation.participants?.data?.[0]?.name || 'Facebook User'}
+                                        </h3>
+                                        <p className="text-xs text-muted-foreground truncate">
+                                            {getPageName(selectedConversation.pageId)}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Quick Actions */}
+                                <div className="p-4">
+                                    <div className="grid grid-cols-4 gap-2">
+                                        {selectedConversation.facebookLink && (
+                                            <a
+                                                href={selectedConversation.facebookLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary p-2 rounded-lg hover:bg-muted"
+                                            >
+                                                <ExternalLink className="h-4 w-4" />
+                                                <span className="text-[10px]">Facebook</span>
+                                            </a>
+                                        )}
+                                        <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary p-2 rounded-lg hover:bg-muted">
+                                            <Ban className="h-4 w-4" />
+                                            <span className="text-[10px]">บล็อก</span>
+                                        </button>
+                                        <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary p-2 rounded-lg hover:bg-muted">
+                                            <Search className="h-4 w-4" />
+                                            <span className="text-[10px]">ค้นหา</span>
+                                        </button>
+                                        <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary p-2 rounded-lg hover:bg-muted">
+                                            <Bookmark className="h-4 w-4" />
+                                            <span className="text-[10px]">ปักหมุด</span>
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* Options List */}
+                                <div className="py-2">
+                                    <button className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted text-left">
+                                        <BellOff className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm">ปิดการแจ้งเตือน</span>
+                                    </button>
+                                    <button className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted text-left">
+                                        <Image className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm">ไฟล์รูปภาพ/วิดีโอ</span>
+                                    </button>
+                                    <button className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted text-left">
+                                        <FileText className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm">ไฟล์</span>
+                                    </button>
+                                    <button className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted text-left">
+                                        <Link2 className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm">ลิงก์</span>
+                                    </button>
+                                </div>
+
+                                <Separator />
+
+                                <div className="py-2">
+                                    <button className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted text-left text-destructive">
+                                        <AlertCircle className="h-4 w-4" />
+                                        <span className="text-sm">รายงานว่าเป็นสแปม</span>
+                                    </button>
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {/* Customer Info Header */}
+                                <div className="p-3 border-b">
+                                    <span className="font-medium text-sm">ข้อมูลลูกค้า</span>
+                                </div>
+
+                                {/* Profile */}
+                                <div className="p-4 flex flex-col items-center border-b">
+                                    <Avatar className="h-16 w-16 mb-3">
+                                        <AvatarFallback className="text-xl">
+                                            {(selectedConversation.participants?.data?.[0]?.name || 'U')[0]}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <h3 className="font-semibold text-center">
+                                        {selectedConversation.participants?.data?.[0]?.name || 'Facebook User'}
+                                    </h3>
+                                    <p className="text-xs text-muted-foreground mt-1">
+                                        {getPageName(selectedConversation.pageId)}
+                                    </p>
+                                </div>
+
+                                {/* Customer Details */}
+                                <div className="p-4 space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <Hash className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-muted-foreground">Facebook ID</p>
+                                            <p className="text-sm truncate">{selectedConversation.participants?.data?.[0]?.id || '-'}</p>
                                         </div>
-                                        <span className="text-xs">ดูบน Facebook</span>
-                                    </a>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Phone className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-muted-foreground">เบอร์โทรศัพท์</p>
+                                            <p className="text-sm">-</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <Mail className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-muted-foreground">อีเมล</p>
+                                            <p className="text-sm">-</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <MapPin className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-muted-foreground">ที่อยู่</p>
+                                            <p className="text-sm">-</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* Tags */}
+                                <div className="p-4">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Tag className="h-4 w-4 text-muted-foreground" />
+                                        <span className="text-sm font-medium">แท็ก</span>
+                                    </div>
+                                    <div className="flex flex-wrap gap-1">
+                                        <span className="text-xs text-muted-foreground">ยังไม่มีแท็ก</span>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* Stats */}
+                                <div className="p-4 space-y-3">
+                                    <div className="flex items-center gap-3">
+                                        <Clock className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-muted-foreground">สนทนาล่าสุด</p>
+                                            <p className="text-sm">{selectedConversation.updated_time ? new Date(selectedConversation.updated_time).toLocaleDateString('th-TH') : '-'}</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <ShoppingBag className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-muted-foreground">ออเดอร์</p>
+                                            <p className="text-sm">0 รายการ</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3">
+                                        <CreditCard className="h-4 w-4 text-muted-foreground shrink-0" />
+                                        <div className="min-w-0">
+                                            <p className="text-xs text-muted-foreground">ยอดซื้อสะสม</p>
+                                            <p className="text-sm">฿0</p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* View on Facebook */}
+                                {selectedConversation.facebookLink && (
+                                    <>
+                                        <Separator />
+                                        <div className="p-4">
+                                            <a
+                                                href={selectedConversation.facebookLink}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex items-center justify-center gap-2 w-full py-2 px-4 rounded-lg border hover:bg-muted transition-colors"
+                                            >
+                                                <ExternalLink className="h-4 w-4" />
+                                                <span className="text-sm">ดูโปรไฟล์บน Facebook</span>
+                                            </a>
+                                        </div>
+                                    </>
                                 )}
-                                <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary">
-                                    <div className="h-9 w-9 rounded-full border flex items-center justify-center">
-                                        <Ban className="h-4 w-4" />
-                                    </div>
-                                    <span className="text-xs">บล็อก</span>
-                                </button>
-                                <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary">
-                                    <div className="h-9 w-9 rounded-full border flex items-center justify-center">
-                                        <Search className="h-4 w-4" />
-                                    </div>
-                                    <span className="text-xs">ค้นหาข้อความ</span>
-                                </button>
-                                <button className="flex flex-col items-center gap-1 text-muted-foreground hover:text-primary">
-                                    <div className="h-9 w-9 rounded-full border flex items-center justify-center">
-                                        <Bookmark className="h-4 w-4" />
-                                    </div>
-                                    <span className="text-xs">ปักหมุด</span>
-                                </button>
-                            </div>
-                        </div>
-
-                        <Separator />
-
-                        {/* Options List */}
-                        <div className="py-2">
-                            <button className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted text-left">
-                                <BellOff className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">ปิดการแจ้งเตือน</span>
-                            </button>
-                            <button className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted text-left">
-                                <Image className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">ไฟล์รูปภาพ/วิดีโอ</span>
-                            </button>
-                            <button className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted text-left">
-                                <FileText className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">ไฟล์</span>
-                            </button>
-                            <button className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted text-left">
-                                <Link2 className="h-4 w-4 text-muted-foreground" />
-                                <span className="text-sm">ลิงก์</span>
-                            </button>
-                        </div>
-
-                        <Separator />
-
-                        <div className="py-2">
-                            <button className="w-full px-4 py-2.5 flex items-center gap-3 hover:bg-muted text-left text-destructive">
-                                <AlertCircle className="h-4 w-4" />
-                                <span className="text-sm">รายงานว่าเป็นสแปม</span>
-                            </button>
-                        </div>
+                            </>
+                        )}
                     </div>
                 </Card>
             )}

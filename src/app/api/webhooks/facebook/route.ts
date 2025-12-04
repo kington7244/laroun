@@ -4,7 +4,7 @@ import { prisma } from '@/lib/db';
 
 // Verify Token - Should match what you set in Facebook App Dashboard
 const VERIFY_TOKEN = process.env.FACEBOOK_WEBHOOK_VERIFY_TOKEN || 'my_secure_verify_token';
-const APP_SECRET = process.env.FACEBOOK_CLIENT_SECRET;
+const APP_SECRET = process.env.FACEBOOK_APP_SECRET;
 
 export async function GET(req: NextRequest) {
     const searchParams = req.nextUrl.searchParams;
