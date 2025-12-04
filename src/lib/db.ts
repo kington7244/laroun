@@ -54,6 +54,27 @@ export async function upsertConversation(data: {
   viewedBy?: string
   facebookConversationId?: string
 }) {
+  // First check if conversation exists and was viewed after last update
+  const existing = await prisma.conversation.findUnique({
+    where: { pageId_participantId: { pageId: data.pageId, participantId: data.participantId } },
+    select: { lastViewedAt: true, updatedTime: true, unreadCount: true }
+  });
+  
+  // Determine if we should update unreadCount:
+  // - If lastViewedAt >= updatedTime (from data), user already read it, keep unreadCount = 0
+  // - If new updatedTime > lastViewedAt, there's new messages, use Facebook's unread_count
+  let finalUnreadCount = data.unreadCount ?? 0;
+  
+  if (existing?.lastViewedAt && data.updatedTime) {
+    // User viewed after (or same time as) the conversation was last updated
+    if (existing.lastViewedAt >= data.updatedTime) {
+      finalUnreadCount = 0; // User already read, force to 0
+    }
+  } else if (existing?.lastViewedAt && !data.updatedTime) {
+    // No new update time, keep existing unread count
+    finalUnreadCount = existing.unreadCount ?? 0;
+  }
+  
   return prisma.conversation.upsert({
     where: { pageId_participantId: { pageId: data.pageId, participantId: data.participantId } },
     create: data,
@@ -61,10 +82,10 @@ export async function upsertConversation(data: {
       participantName: data.participantName,
       snippet: data.snippet,
       updatedTime: data.updatedTime,
-      unreadCount: data.unreadCount,
+      unreadCount: finalUnreadCount,
       adId: data.adId,
       facebookLink: data.facebookLink,
-      viewedBy: data.viewedBy,
+      // Don't override viewedBy - preserve who read it
       facebookConversationId: data.facebookConversationId
     }
   })

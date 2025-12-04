@@ -3,10 +3,11 @@
 import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
 import { useRouter, useSearchParams } from "next/navigation"
-import { User, Link2, Bell, Shield, Globe, Palette, Trash2 } from "lucide-react"
+import { User, Link2, Bell, Shield, Globe, Palette, Trash2, Users } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AccountForm } from "@/components/settings/AccountForm"
 import { ConnectForm } from "@/components/settings/ConnectForm"
+import { TeamForm } from "@/components/settings/TeamForm"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -22,6 +23,7 @@ import Link from "next/link"
 const settingsMenu = [
     { id: "account", name: "Account", icon: User, description: "Manage your account details" },
     { id: "connect", name: "Connections", icon: Link2, description: "Connected accounts" },
+    { id: "team", name: "Team", icon: Users, description: "Manage your team" },
     { id: "notifications", name: "Notifications", icon: Bell, description: "Notification preferences" },
     { id: "security", name: "Security", icon: Shield, description: "Security settings" },
     { id: "language", name: "Language", icon: Globe, description: "Language & region" },
@@ -264,6 +266,20 @@ export default function SettingsPage() {
                             </div>
                             <div className="border-t pt-6">
                                 <ConnectForm facebookAccount={facebookAccount} />
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSection === "team" && (
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-xl font-semibold">จัดการทีม</h3>
+                                <p className="text-muted-foreground text-sm mt-1">
+                                    เพิ่มพนักงานและแบ่งแชทลูกค้าให้แต่ละคนดูแล
+                                </p>
+                            </div>
+                            <div className="border-t pt-6">
+                                <TeamForm />
                             </div>
                         </div>
                     )}

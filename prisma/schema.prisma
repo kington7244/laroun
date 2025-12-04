@@ -16,6 +16,7 @@ model User {
   image          String?
   facebookAdToken String?  @db.Text
   facebookName   String?   // Name from connected Facebook account
+  role           String    @default("admin") // admin, staff
   
   // User Settings
   language       String    @default("en")
@@ -41,6 +42,11 @@ model User {
   accounts       Account[]
   sessions       Session[]
   adAccounts     AdAccount[]
+  
+  // Team Relations
+  ownedTeams     Team[]    @relation("TeamOwner")
+  teamMemberships TeamMember[]
+  assignedConversations Conversation[] @relation("AssignedTo")
 }
 
 model Account {
@@ -111,6 +117,12 @@ model Conversation {
   viewedBy               String?   @db.Text  // JSON: [{id, name, email, viewedAt}]
   lastViewedBy           String?   // Last viewer's name
   lastViewedAt           DateTime? // Last viewed timestamp
+  
+  // Assignment
+  assignedToId           String?   // Staff assigned to this conversation
+  assignedTo             User?     @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedAt             DateTime? // When it was assigned
+  
   createdAt              DateTime  @default(now())
   updatedAt              DateTime  @updatedAt
   messages               Message[]
@@ -120,6 +132,7 @@ model Conversation {
   @@index([participantId])
   @@index([adId])
   @@index([facebookConversationId])
+  @@index([assignedToId])
 }
 
 model Message {
@@ -130,12 +143,15 @@ model Message {
   attachments    String?  @db.LongText  // JSON array
   stickerUrl     String?
   isFromPage     Boolean  @default(false)
+  repliedById    String?  // User ID who sent this message (for page messages)
+  repliedByName  String?  // Name of user who sent this message
   createdTime    DateTime
   createdAt      DateTime @default(now())
   conversation   Conversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
 
   @@index([conversationId])
   @@index([createdTime])
+  @@index([repliedById])
 }
 
 model PageSettings {
@@ -152,5 +168,38 @@ model PageSettings {
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
+  @@index([userId])
+}
+
+// Team for managing staff members
+model Team {
+  id                String   @id @default(cuid())
+  name              String
+  ownerId           String
+  owner             User     @relation("TeamOwner", fields: [ownerId], references: [id], onDelete: Cascade)
+  
+  // Auto-assign settings
+  autoAssignEnabled Boolean  @default(false)
+  assignmentMode    String   @default("roundrobin") // roundrobin, leastbusy
+  lastAssignedIndex Int      @default(0) // For round-robin
+  
+  members           TeamMember[]
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([ownerId])
+}
+
+model TeamMember {
+  id        String   @id @default(cuid())
+  teamId    String
+  team      Team     @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  isActive  Boolean  @default(true) // Can receive new assignments
+  createdAt DateTime @default(now())
+  
+  @@unique([teamId, userId])
+  @@index([teamId])
   @@index([userId])
 }

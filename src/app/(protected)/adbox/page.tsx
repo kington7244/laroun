@@ -10,7 +10,7 @@ import {
     Search, MessageCircle, RefreshCw, Loader2, Settings, Send, 
     ExternalLink, ChevronRight, X, Ban, Bookmark, Bell, BellOff,
     Image, FileText, Link2, Calendar, AlertCircle, User, Phone,
-    Mail, MapPin, Tag, Clock, ShoppingBag, CreditCard, Hash
+    Mail, MapPin, Tag, Clock, ShoppingBag, CreditCard, Hash, Eye, Users
 } from 'lucide-react';
 import { Separator } from '@/components/ui/separator';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
@@ -21,7 +21,11 @@ import {
     fetchConversationsFromDB,
     fetchMessages,
     sendReply,
-    markConversationRead
+    markConversationRead,
+    getCurrentUser,
+    assignConversation,
+    autoAssignAllConversations,
+    getTeamInfo
 } from '@/app/actions';
 import { Checkbox } from '@/components/ui/checkbox';
 import {
@@ -69,6 +73,11 @@ export default function AdBoxPage() {
     
     // Info Panel State - Conversation Info (toggle with user icon)
     const [showConversationInfo, setShowConversationInfo] = useState(false);
+
+    // User and Team State
+    const [currentUser, setCurrentUser] = useState<any>(null);
+    const [teamInfo, setTeamInfo] = useState<any>(null);
+    const [isAdmin, setIsAdmin] = useState(false);
 
     // Notification settings
     const [soundEnabled, setSoundEnabled] = useState(true);
@@ -191,27 +200,41 @@ export default function AdBoxPage() {
                         new Date(a.created_time).getTime() - new Date(b.created_time).getTime()
                     );
                     
-                    // Merge new messages instead of replacing
+                    // Merge new messages instead of replacing - use functional update to get latest state
                     setMessages(prev => {
                         if (sortedMsgs.length === 0) return prev;
                         
-                        const existingIds = new Set(prev.map((m: any) => m.id));
-                        const newMsgs = sortedMsgs.filter((m: any) => !existingIds.has(m.id) && !m.id.startsWith('temp_'));
+                        // Create map of existing messages to preserve repliedByName
+                        const existingMap = new Map(prev.map((m: any) => [m.id, m]));
                         
-                        // Replace temp messages with real ones
-                        const updatedPrev = prev.filter((m: any) => {
-                            if (!m.id.startsWith('temp_')) return true;
-                            return !sortedMsgs.some((sm: any) => sm.message === m.message);
+                        // Merge: keep repliedByName from existing messages or from fresh data
+                        const mergedMsgs = sortedMsgs.map((freshMsg: any) => {
+                            const existing = existingMap.get(freshMsg.id);
+                            // Preserve repliedByName from existing or use from fresh
+                            return {
+                                ...freshMsg,
+                                repliedByName: existing?.repliedByName || freshMsg.repliedByName
+                            };
                         });
                         
-                        if (newMsgs.length > 0) {
-                            const merged = [...updatedPrev, ...newMsgs].sort((a: any, b: any) => 
-                                new Date(a.created_time).getTime() - new Date(b.created_time).getTime()
-                            );
+                        // Also keep temp messages that haven't been replaced yet
+                        const tempMsgs = prev.filter((m: any) => 
+                            m.id.startsWith('temp_') && 
+                            !sortedMsgs.some((sm: any) => sm.message === m.message)
+                        );
+                        
+                        const allMsgs = [...mergedMsgs, ...tempMsgs];
+                        const sorted = allMsgs.sort((a: any, b: any) => 
+                            new Date(a.created_time).getTime() - new Date(b.created_time).getTime()
+                        );
+                        
+                        // Only scroll if there are new messages
+                        const hasNewMsgs = sortedMsgs.some((sm: any) => !existingMap.has(sm.id));
+                        if (hasNewMsgs) {
                             setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-                            return merged;
                         }
-                        return updatedPrev;
+                        
+                        return sorted;
                     });
                 }
             } catch (error) {
@@ -234,7 +257,22 @@ export default function AdBoxPage() {
     // Load pages on mount
     useEffect(() => {
         loadPages();
+        loadUserAndTeam();
     }, []);
+
+    const loadUserAndTeam = async () => {
+        try {
+            const [user, team] = await Promise.all([
+                getCurrentUser(),
+                getTeamInfo()
+            ]);
+            setCurrentUser(user);
+            setTeamInfo(team);
+            setIsAdmin(user?.role === 'admin');
+        } catch (e) {
+            console.error('Failed to load user/team:', e);
+        }
+    };
 
     // Save selectedPageIds to localStorage
     useEffect(() => {
@@ -390,13 +428,17 @@ export default function AdBoxPage() {
             setSending(true);
             setReplyText(''); // Clear immediately for better UX
             
-            // Optimistic update - add message immediately
+            // Get current user's name for display
+            const senderName = currentUser?.facebookName || currentUser?.name || currentUser?.email || session?.user?.name || 'Me';
+            
+            // Optimistic update - add message immediately with replier info
             setMessages(prev => [...prev, {
                 id: tempId,
                 message: messageToSend,
                 from: { id: selectedConversation.pageId, name: 'Me' },
                 created_time: now,
-                isFromPage: true
+                isFromPage: true,
+                repliedByName: senderName
             }]);
             
             // Scroll to bottom immediately
@@ -428,8 +470,57 @@ export default function AdBoxPage() {
     };
 
     const selectConversation = (conv: any) => {
+        // Clear messages immediately when switching conversations
+        setMessages([]);
+        setAllMessagesCache([]);
         setSelectedConversation(conv);
         loadMessages(conv);
+    };
+
+    // Handle assign conversation
+    const handleAssignConversation = async (conversationId: string, assignToId: string | null) => {
+        if (!isAdmin) return;
+        
+        try {
+            await assignConversation(conversationId, assignToId);
+            
+            // Update local state
+            setConversations(prev => prev.map(c => 
+                c.id === conversationId 
+                    ? { 
+                        ...c, 
+                        assignedTo: assignToId ? teamInfo?.team?.members?.find((m: any) => m.user.id === assignToId)?.user : null,
+                        assignedAt: assignToId ? new Date().toISOString() : null
+                    } 
+                    : c
+            ));
+            
+            if (selectedConversation?.id === conversationId) {
+                setSelectedConversation((prev: any) => prev ? {
+                    ...prev,
+                    assignedTo: assignToId ? teamInfo?.team?.members?.find((m: any) => m.user.id === assignToId)?.user : null,
+                    assignedAt: assignToId ? new Date().toISOString() : null
+                } : null);
+            }
+            
+            toast.success(assignToId ? 'มอบหมายแชทสำเร็จ' : 'ยกเลิกการมอบหมาย');
+        } catch (error) {
+            toast.error('ไม่สามารถมอบหมายแชทได้');
+        }
+    };
+
+    // Handle auto-assign all
+    const handleAutoAssignAll = async () => {
+        if (!isAdmin) return;
+        
+        try {
+            const result = await autoAssignAllConversations();
+            toast.success(`แบ่งแชทสำเร็จ ${result.assigned} รายการ`);
+            // Reload conversations
+            loadConversations();
+        } catch (error: any) {
+            toast.error(error.message || 'ไม่สามารถแบ่งแชทได้');
+        }
     };
 
     const filteredConversations = conversations.filter(conv => {
@@ -593,13 +684,26 @@ export default function AdBoxPage() {
                                                         <span className="text-xs text-muted-foreground truncate flex-1">
                                                             {getPageName(conv.pageId)}
                                                         </span>
-                                                        {conv.unread_count > 0 ? (
+                                                        {conv.lastViewedBy && (
+                                                            <div className="flex items-center gap-0.5 shrink-0" title={`ตอบโดย ${conv.lastViewedBy}`}>
+                                                                <Avatar className="h-4 w-4">
+                                                                    <AvatarFallback className="text-[8px] bg-blue-100 text-blue-600">
+                                                                        {conv.lastViewedBy.charAt(0).toUpperCase()}
+                                                                    </AvatarFallback>
+                                                                </Avatar>
+                                                                <span className="text-xs text-blue-500 max-w-[60px] truncate">
+                                                                    {conv.lastViewedBy.split(' ')[0]}
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {conv.assignedTo && (
+                                                            <span className="text-xs text-green-500 shrink-0" title={`มอบหมายให้: ${conv.assignedTo.name}`}>
+                                                                📋 {conv.assignedTo.name?.split(' ')[0]}
+                                                            </span>
+                                                        )}
+                                                        {conv.unread_count > 0 && (
                                                             <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full shrink-0">
                                                                 {conv.unread_count}
-                                                            </span>
-                                                        ) : conv.lastViewedBy && (
-                                                            <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1" title={`อ่านโดย ${conv.lastViewedBy}`}>
-                                                                👁 {conv.lastViewedBy.split(' ')[0]}
                                                             </span>
                                                         )}
                                                     </div>
@@ -633,21 +737,18 @@ export default function AdBoxPage() {
                                     <p className="text-sm text-muted-foreground">
                                         {getPageName(selectedConversation.pageId)}
                                     </p>
+                                    {selectedConversation.lastViewedBy && (
+                                        <p className="text-xs text-muted-foreground flex items-center gap-1">
+                                            <Eye className="h-3 w-3" />
+                                            อ่านโดย {selectedConversation.lastViewedBy}
+                                            {selectedConversation.lastViewedAt && (
+                                                <span>• {formatConversationTime(new Date(selectedConversation.lastViewedAt))}</span>
+                                            )}
+                                        </p>
+                                    )}
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                {selectedConversation.facebookLink && (
-                                    <a
-                                        href={selectedConversation.facebookLink}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                    >
-                                        <Button variant="ghost" size="sm">
-                                            <ExternalLink className="h-4 w-4 mr-2" />
-                                            Open in Facebook
-                                        </Button>
-                                    </a>
-                                )}
                                 <Button 
                                     variant={showConversationInfo ? "secondary" : "ghost"}
                                     size="icon"
@@ -796,10 +897,25 @@ export default function AdBoxPage() {
                                                             </div>
                                                         )}
                                                         
-                                                        {/* Time */}
-                                                        <p className={`text-xs ${isFromPage ? 'text-right' : 'text-left'} text-muted-foreground`}>
-                                                            {formatMessageTime(msg.created_time)}
-                                                        </p>
+                                                        {/* Time and Replier with Avatar */}
+                                                        <div className={`flex items-center gap-1.5 ${isFromPage ? 'justify-end' : 'justify-start'}`}>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {formatMessageTime(msg.created_time)}
+                                                            </span>
+                                                            {isFromPage && msg.repliedByName && (
+                                                                <div className="flex items-center gap-1">
+                                                                    <span className="text-xs text-muted-foreground">•</span>
+                                                                    <Avatar className="h-4 w-4">
+                                                                        <AvatarFallback className="text-[8px] bg-blue-100 text-blue-600">
+                                                                            {msg.repliedByName.charAt(0).toUpperCase()}
+                                                                        </AvatarFallback>
+                                                                    </Avatar>
+                                                                    <span className="text-xs text-blue-500 font-medium">
+                                                                        {msg.repliedByName}
+                                                                    </span>
+                                                                </div>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 </div>
                                             );
@@ -850,22 +966,33 @@ export default function AdBoxPage() {
             {/* Right Panel - Customer Info / Conversation Info */}
             {selectedConversation && (
                 <Card className="w-72 flex flex-col overflow-hidden shrink-0">
-                    <div className="h-full overflow-y-auto">
+                    <div className="h-full overflow-y-auto flex flex-col">
+                        {/* Tab Headers */}
+                        <div className="flex border-b">
+                            <button 
+                                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+                                    !showConversationInfo 
+                                        ? 'text-primary border-b-2 border-primary' 
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                                onClick={() => setShowConversationInfo(false)}
+                            >
+                                ข้อมูลลูกค้า
+                            </button>
+                            <button 
+                                className={`flex-1 py-2.5 text-sm font-medium transition-colors ${
+                                    showConversationInfo 
+                                        ? 'text-primary border-b-2 border-primary' 
+                                        : 'text-muted-foreground hover:text-foreground'
+                                }`}
+                                onClick={() => setShowConversationInfo(true)}
+                            >
+                                การสนทนา
+                            </button>
+                        </div>
+
                         {showConversationInfo ? (
                             <>
-                                {/* Conversation Info Header */}
-                                <div className="p-3 border-b flex items-center justify-between">
-                                    <span className="font-medium text-sm">ข้อมูลการสนทนา</span>
-                                    <Button 
-                                        variant="ghost" 
-                                        size="icon" 
-                                        className="h-7 w-7"
-                                        onClick={() => setShowConversationInfo(false)}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                </div>
-
                                 {/* Profile Summary */}
                                 <div className="p-4 flex items-center gap-3 border-b">
                                     <Avatar className="h-10 w-10">
@@ -911,6 +1038,62 @@ export default function AdBoxPage() {
                                         </button>
                                     </div>
                                 </div>
+
+                                <Separator />
+
+                                {/* Assignment Section - Admin Only */}
+                                {isAdmin && teamInfo?.team?.members && (
+                                    <div className="p-4">
+                                        <div className="flex items-center gap-2 mb-3">
+                                            <Users className="h-4 w-4 text-muted-foreground" />
+                                            <span className="font-medium text-sm">มอบหมายให้</span>
+                                        </div>
+                                        <div className="space-y-2">
+                                            {/* Current assignment */}
+                                            {selectedConversation.assignedTo && (
+                                                <div className="flex items-center justify-between p-2 rounded-lg bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800">
+                                                    <div className="flex items-center gap-2">
+                                                        <Avatar className="h-6 w-6">
+                                                            <AvatarFallback className="text-xs">
+                                                                {(selectedConversation.assignedTo.name || 'U')[0]}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <span className="text-sm">{selectedConversation.assignedTo.name}</span>
+                                                    </div>
+                                                    <Button 
+                                                        variant="ghost" 
+                                                        size="sm"
+                                                        className="h-7 text-xs"
+                                                        onClick={() => handleAssignConversation(selectedConversation.id, null)}
+                                                    >
+                                                        ยกเลิก
+                                                    </Button>
+                                                </div>
+                                            )}
+                                            
+                                            {/* Member list to assign */}
+                                            {teamInfo.team.members
+                                                .filter((m: any) => m.isActive && m.user.id !== selectedConversation.assignedTo?.id)
+                                                .map((member: any) => (
+                                                    <button
+                                                        key={member.id}
+                                                        className="w-full flex items-center gap-2 p-2 rounded-lg hover:bg-muted text-left"
+                                                        onClick={() => handleAssignConversation(selectedConversation.id, member.user.id)}
+                                                    >
+                                                        <Avatar className="h-6 w-6">
+                                                            <AvatarFallback className="text-xs">
+                                                                {(member.user.facebookName || member.user.name || member.user.email)[0].toUpperCase()}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <span className="text-sm">
+                                                            {member.user.facebookName || member.user.name || member.user.email}
+                                                        </span>
+                                                    </button>
+                                                ))
+                                            }
+                                        </div>
+                                    </div>
+                                )}
 
                                 <Separator />
 
@@ -977,11 +1160,6 @@ export default function AdBoxPage() {
                             </>
                         ) : (
                             <>
-                                {/* Customer Info Header */}
-                                <div className="p-3 border-b">
-                                    <span className="font-medium text-sm">ข้อมูลลูกค้า</span>
-                                </div>
-
                                 {/* Profile */}
                                 <div className="p-4 flex flex-col items-center border-b">
                                     <Avatar className="h-16 w-16 mb-3">

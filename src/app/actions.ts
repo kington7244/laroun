@@ -113,6 +113,33 @@ export async function fetchAdAccounts(accessToken: string) {
     }
 }
 
+// ===== Helper: Get User's Facebook Token =====
+
+async function getUserFacebookToken(userId: string): Promise<string | null> {
+    // Get user's own token only (no sharing)
+    const user = await prisma.user.findUnique({ 
+        where: { id: userId },
+        select: { facebookAdToken: true }
+    });
+
+    // If user has their own token, use it
+    if (user?.facebookAdToken) {
+        return user.facebookAdToken;
+    }
+    
+    // Try OAuth token from Account table
+    const account = await prisma.account.findFirst({
+        where: { userId, provider: "facebook" },
+        select: { access_token: true }
+    });
+    
+    if (account?.access_token) {
+        return account.access_token;
+    }
+    
+    return null;
+}
+
 // ===== AdBox Functions =====
 
 export async function fetchPages() {
@@ -125,27 +152,9 @@ export async function fetchPages() {
     const userId = (session.user as any).id;
     console.log('[fetchPages] userId:', userId);
     
-    // First try to get token from User.facebookAdToken
-    const user = await prisma.user.findUnique({ 
-        where: { id: userId },
-        select: { facebookAdToken: true }
-    });
-
-    let accessToken = user?.facebookAdToken;
-    console.log('[fetchPages] User.facebookAdToken exists:', !!accessToken);
-    
-    // If no token in User, try to get from Account table (OAuth login)
-    if (!accessToken) {
-        const account = await prisma.account.findFirst({
-            where: { 
-                userId: userId,
-                provider: "facebook"
-            },
-            select: { access_token: true }
-        });
-        accessToken = account?.access_token || null;
-        console.log('[fetchPages] Account.access_token exists:', !!accessToken);
-    }
+    // Get user's own token (each user must connect Facebook)
+    const accessToken = await getUserFacebookToken(userId);
+    console.log('[fetchPages] Token found:', !!accessToken);
 
     if (!accessToken) {
         console.log('[fetchPages] No Facebook token found for user');
@@ -171,25 +180,8 @@ export async function fetchConversations(pages: { id: string, access_token?: str
 
     const userId = (session.user as any).id;
     
-    // First try to get token from User.facebookAdToken
-    const user = await prisma.user.findUnique({ 
-        where: { id: userId },
-        select: { facebookAdToken: true }
-    });
-
-    let accessToken = user?.facebookAdToken;
-    
-    // If no token in User, try to get from Account table (OAuth login)
-    if (!accessToken) {
-        const account = await prisma.account.findFirst({
-            where: { 
-                userId: userId,
-                provider: "facebook"
-            },
-            select: { access_token: true }
-        });
-        accessToken = account?.access_token || null;
-    }
+    // Get user's own token (each user must connect Facebook)
+    const accessToken = await getUserFacebookToken(userId);
 
     if (!accessToken) {
         console.log('[fetchConversations] No Facebook token found for user');
@@ -246,23 +238,35 @@ export async function fetchConversations(pages: { id: string, access_token?: str
             new Date(b.updated_time).getTime() - new Date(a.updated_time).getTime()
         );
 
-        // Save to database in background (don't await)
-        Promise.all(
-            allConversations.map(conv => 
-                upsertConversation({
-                    pageId: conv.pageId,
-                    participantId: conv.participantId,
-                    participantName: conv.participantName,
-                    snippet: conv.snippet,
-                    updatedTime: new Date(conv.updated_time),
-                    unreadCount: conv.unread_count || 0,
-                    facebookLink: conv.facebookLink,
-                    facebookConversationId: conv.id  // Save Facebook conversation ID
-                }).catch(e => console.error('Failed to save conversation:', e))
-            )
+        // Save to database and get corrected unread counts
+        const savedConversations = await Promise.all(
+            allConversations.map(async conv => {
+                try {
+                    const saved = await upsertConversation({
+                        pageId: conv.pageId,
+                        participantId: conv.participantId,
+                        participantName: conv.participantName,
+                        snippet: conv.snippet,
+                        updatedTime: new Date(conv.updated_time),
+                        unreadCount: conv.unread_count || 0,
+                        facebookLink: conv.facebookLink,
+                        facebookConversationId: conv.id
+                    });
+                    // Return conv with corrected unread_count from DB
+                    return {
+                        ...conv,
+                        unread_count: saved.unreadCount,
+                        lastViewedBy: saved.lastViewedBy,
+                        lastViewedAt: saved.lastViewedAt?.toISOString()
+                    };
+                } catch (e) {
+                    console.error('Failed to save conversation:', e);
+                    return conv;
+                }
+            })
         );
 
-        return JSON.parse(JSON.stringify(allConversations));
+        return JSON.parse(JSON.stringify(savedConversations));
     } catch (error: any) {
         console.error('Failed to fetch conversations:', error);
         return [];
@@ -291,7 +295,9 @@ export async function fetchMessages(conversationId: string, pageId: string, page
         created_time: m.createdTime.toISOString(),
         attachments: m.attachments ? JSON.parse(m.attachments) : undefined,
         sticker: m.stickerUrl ? { url: m.stickerUrl } : undefined,
-        isFromPage: m.isFromPage
+        isFromPage: m.isFromPage,
+        repliedById: m.repliedById,
+        repliedByName: m.repliedByName
     }));
 
     // Determine which ID to use for Facebook API
@@ -307,20 +313,8 @@ export async function fetchMessages(conversationId: string, pageId: string, page
     }
     
     // No cache, try to fetch from Facebook
-    const user = await prisma.user.findUnique({ 
-        where: { id: userId },
-        select: { facebookAdToken: true }
-    });
-
-    let accessToken = user?.facebookAdToken;
-    
-    if (!accessToken) {
-        const account = await prisma.account.findFirst({
-            where: { userId, provider: "facebook" },
-            select: { access_token: true }
-        });
-        accessToken = account?.access_token || null;
-    }
+    // Get user's own token (each user must connect Facebook)
+    const accessToken = await getUserFacebookToken(userId);
 
     if (!accessToken) {
         console.log('[fetchMessages] No Facebook token found for user');
@@ -336,6 +330,8 @@ export async function fetchMessages(conversationId: string, pageId: string, page
             const conversation = await prisma.conversation.findUnique({ where: { id: conversationId } });
             if (conversation) {
                 await Promise.all(messages.map(async (msg: any) => {
+                    // Facebook sends sticker as string URL, not { url: ... }
+                    const stickerUrl = typeof msg.sticker === 'string' ? msg.sticker : msg.sticker?.url;
                     await prisma.message.upsert({
                         where: { id: msg.id },
                         create: {
@@ -344,17 +340,27 @@ export async function fetchMessages(conversationId: string, pageId: string, page
                             from: msg.from?.id || 'unknown',
                             text: msg.message,
                             attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
-                            stickerUrl: msg.sticker?.url,
+                            stickerUrl: stickerUrl,
                             isFromPage: msg.from?.id === pageId,
                             createdTime: new Date(msg.created_time)
                         },
-                        update: {}
+                        update: {
+                            stickerUrl: stickerUrl,
+                            attachments: msg.attachments ? JSON.stringify(msg.attachments) : null
+                        }
                     });
                 }));
             }
         }
         
-        return JSON.parse(JSON.stringify(messages));
+        // Normalize sticker format for frontend (convert string to { url: ... })
+        const normalizedMessages = messages.map((msg: any) => ({
+            ...msg,
+            sticker: msg.sticker ? { url: typeof msg.sticker === 'string' ? msg.sticker : msg.sticker.url } : undefined,
+            stickerUrl: typeof msg.sticker === 'string' ? msg.sticker : msg.sticker?.url
+        }));
+        
+        return JSON.parse(JSON.stringify(normalizedMessages));
     } catch (error: any) {
         console.error('Failed to fetch messages:', error);
         return formattedDbMessages;
@@ -363,20 +369,8 @@ export async function fetchMessages(conversationId: string, pageId: string, page
 
 // Background sync helper
 async function syncMessagesFromFacebook(conversationId: string, pageId: string, userId: string, pageAccessToken?: string, facebookConversationId?: string) {
-    const user = await prisma.user.findUnique({ 
-        where: { id: userId },
-        select: { facebookAdToken: true }
-    });
-
-    let accessToken = user?.facebookAdToken;
-    
-    if (!accessToken) {
-        const account = await prisma.account.findFirst({
-            where: { userId, provider: "facebook" },
-            select: { access_token: true }
-        });
-        accessToken = account?.access_token || null;
-    }
+    // Get user's own token (each user must connect Facebook)
+    const accessToken = await getUserFacebookToken(userId);
 
     if (!accessToken) return;
 
@@ -388,20 +382,38 @@ async function syncMessagesFromFacebook(conversationId: string, pageId: string, 
         
         if (messages.length > 0) {
             await Promise.all(messages.map(async (msg: any) => {
-                await prisma.message.upsert({
-                    where: { id: msg.id },
-                    create: {
-                        id: msg.id,
-                        conversationId,  // Use DB conversation ID for storage
-                        from: msg.from?.id || 'unknown',
-                        text: msg.message,
-                        attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
-                        stickerUrl: msg.sticker?.url,
-                        isFromPage: msg.from?.id === pageId,
-                        createdTime: new Date(msg.created_time)
-                    },
-                    update: {}
+                // Facebook sends sticker as string URL, not { url: ... }
+                const stickerUrl = typeof msg.sticker === 'string' ? msg.sticker : msg.sticker?.url;
+                
+                // Check if message already exists
+                const existing = await prisma.message.findUnique({
+                    where: { id: msg.id }
                 });
+                
+                if (existing) {
+                    // Only update attachments/sticker, preserve repliedById/repliedByName
+                    await prisma.message.update({
+                        where: { id: msg.id },
+                        data: {
+                            stickerUrl: stickerUrl || existing.stickerUrl,
+                            attachments: msg.attachments ? JSON.stringify(msg.attachments) : existing.attachments
+                        }
+                    });
+                } else {
+                    // Create new message
+                    await prisma.message.create({
+                        data: {
+                            id: msg.id,
+                            conversationId,
+                            from: msg.from?.id || 'unknown',
+                            text: msg.message,
+                            attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
+                            stickerUrl: stickerUrl,
+                            isFromPage: msg.from?.id === pageId,
+                            createdTime: new Date(msg.created_time)
+                        }
+                    });
+                }
             }));
         }
     } catch (e) {
@@ -417,29 +429,19 @@ export async function sendReply(pageId: string, recipientId: string, messageText
 
     const userId = (session.user as any).id;
     
-    // First try to get token from User.facebookAdToken
-    const user = await prisma.user.findUnique({ 
-        where: { id: userId },
-        select: { facebookAdToken: true }
-    });
-
-    let accessToken = user?.facebookAdToken;
-    
-    // If no token in User, try to get from Account table (OAuth login)
-    if (!accessToken) {
-        const account = await prisma.account.findFirst({
-            where: { 
-                userId: userId,
-                provider: "facebook"
-            },
-            select: { access_token: true }
-        });
-        accessToken = account?.access_token || null;
-    }
+    // Get user's own token (each user must connect Facebook)
+    const accessToken = await getUserFacebookToken(userId);
 
     if (!accessToken) {
         throw new Error("No Facebook token found");
     }
+    
+    // Get user's name for tracking who replied
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { facebookName: true, name: true, email: true }
+    });
+    const repliedByName = user?.facebookName || user?.name || user?.email || 'Unknown';
 
     try {
         const result = await sendMessage(accessToken, pageId, recipientId, messageText);
@@ -454,7 +456,7 @@ export async function sendReply(pageId: string, recipientId: string, messageText
             }
         });
         
-        // Save sent message to DB
+        // Save sent message to DB with replier info
         await prisma.message.create({
             data: {
                 id: result.message_id || `sent_${Date.now()}`,
@@ -462,6 +464,8 @@ export async function sendReply(pageId: string, recipientId: string, messageText
                 from: pageId,
                 text: messageText,
                 isFromPage: true,
+                repliedById: userId,
+                repliedByName: repliedByName,
                 createdTime: now
             }
         });
@@ -537,24 +541,42 @@ export async function markConversationRead(conversationId: string) {
 export async function fetchConversationsFromDB(pageIds: string[]) {
     if (pageIds.length === 0) return [];
 
-    try {
-        // Fetch all pages in parallel
-        const results = await Promise.all(
-            pageIds.map(pageId => 
-                prisma.conversation.findMany({
-                    where: { pageId },
-                    orderBy: { updatedTime: 'desc' },
-                    take: 50 // Limit per page
-                })
-            )
-        );
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+        return [];
+    }
 
-        const allConversations = results.flat();
-        
-        // Sort all by updated time
-        allConversations.sort((a, b) => 
-            new Date(b.updatedTime || 0).getTime() - new Date(a.updatedTime || 0).getTime()
-        );
+    const userId = (session.user as any).id;
+    
+    // Get user role
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true }
+    });
+
+    const isAdmin = user?.role === 'admin';
+
+    try {
+        // Build where clause based on role
+        const whereClause: any = {
+            pageId: { in: pageIds }
+        };
+
+        // Staff can only see their assigned conversations
+        if (!isAdmin) {
+            whereClause.assignedToId = userId;
+        }
+
+        const allConversations = await prisma.conversation.findMany({
+            where: whereClause,
+            orderBy: { updatedTime: 'desc' },
+            take: 200, // Limit total
+            include: {
+                assignedTo: {
+                    select: { id: true, name: true, facebookName: true, email: true }
+                }
+            }
+        });
 
         return allConversations.map((c: any) => {
             // Parse viewedBy
@@ -581,11 +603,206 @@ export async function fetchConversationsFromDB(pageIds: string[]) {
                 },
                 viewedBy: viewedByList,
                 lastViewedBy: c.lastViewedBy,
-                lastViewedAt: c.lastViewedAt?.toISOString()
+                lastViewedAt: c.lastViewedAt?.toISOString(),
+                assignedTo: c.assignedTo ? {
+                    id: c.assignedTo.id,
+                    name: c.assignedTo.facebookName || c.assignedTo.name || c.assignedTo.email
+                } : null,
+                assignedAt: c.assignedAt?.toISOString()
             };
         });
     } catch (error) {
         console.error('Failed to fetch conversations from DB:', error);
         return [];
     }
+}
+
+// Get current user info with role
+export async function getCurrentUser() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+        return null;
+    }
+
+    const userId = (session.user as any).id;
+    
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { 
+            id: true, 
+            name: true, 
+            email: true, 
+            facebookName: true, 
+            role: true 
+        }
+    });
+
+    return user;
+}
+
+// Assign conversation to staff member
+export async function assignConversation(conversationId: string, assignToId: string | null) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+        throw new Error("Not authenticated");
+    }
+
+    const userId = (session.user as any).id;
+    
+    // Check if user is admin
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true }
+    });
+
+    if (user?.role !== 'admin') {
+        throw new Error("Only admins can assign conversations");
+    }
+
+    await prisma.conversation.update({
+        where: { id: conversationId },
+        data: {
+            assignedToId: assignToId,
+            assignedAt: assignToId ? new Date() : null
+        }
+    });
+
+    return { success: true };
+}
+
+// Auto-assign all unassigned conversations
+export async function autoAssignAllConversations() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+        throw new Error("Not authenticated");
+    }
+
+    const userId = (session.user as any).id;
+    
+    // Check if user is admin
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { role: true }
+    });
+
+    if (user?.role !== 'admin') {
+        throw new Error("Only admins can auto-assign conversations");
+    }
+
+    // Get team and active members
+    const team = await prisma.team.findFirst({
+        where: { ownerId: userId },
+        include: {
+            members: {
+                where: { isActive: true },
+                include: { user: true }
+            }
+        }
+    });
+
+    if (!team || team.members.length === 0) {
+        throw new Error("No active team members");
+    }
+
+    // Get all unassigned conversations
+    const unassignedConversations = await prisma.conversation.findMany({
+        where: { assignedToId: null },
+        orderBy: { updatedTime: 'desc' }
+    });
+
+    if (unassignedConversations.length === 0) {
+        return { success: true, assigned: 0 };
+    }
+
+    // Round-robin assignment
+    let memberIndex = team.lastAssignedIndex || 0;
+    const assignments = [];
+
+    for (const conv of unassignedConversations) {
+        const member = team.members[memberIndex % team.members.length];
+        assignments.push({
+            id: conv.id,
+            assignedToId: member.userId
+        });
+        memberIndex++;
+    }
+
+    // Update all conversations
+    await Promise.all(
+        assignments.map(a =>
+            prisma.conversation.update({
+                where: { id: a.id },
+                data: {
+                    assignedToId: a.assignedToId,
+                    assignedAt: new Date()
+                }
+            })
+        )
+    );
+
+    // Update team's last assigned index
+    await prisma.team.update({
+        where: { id: team.id },
+        data: { lastAssignedIndex: memberIndex % team.members.length }
+    });
+
+    return { success: true, assigned: assignments.length };
+}
+
+// Get team info
+export async function getTeamInfo() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+        return null;
+    }
+
+    const userId = (session.user as any).id;
+    
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { id: true, role: true }
+    });
+
+    if (!user) return null;
+
+    // Get team owned by this user (admin)
+    let team = await prisma.team.findFirst({
+        where: { ownerId: userId },
+        include: {
+            members: {
+                include: {
+                    user: {
+                        select: { id: true, name: true, email: true, facebookName: true, role: true }
+                    }
+                }
+            }
+        }
+    });
+
+    // If user is staff, find the team they belong to
+    if (!team && user.role === 'staff') {
+        const membership = await prisma.teamMember.findFirst({
+            where: { userId },
+            include: {
+                team: {
+                    include: {
+                        members: {
+                            include: {
+                                user: {
+                                    select: { id: true, name: true, email: true, facebookName: true, role: true }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        team = membership?.team || null;
+    }
+
+    return {
+        user,
+        team,
+        isAdmin: user.role === 'admin'
+    };
 }
