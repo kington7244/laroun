@@ -5,11 +5,7 @@ import { AccountForm } from "@/components/settings/AccountForm"
 import { ConnectForm } from "@/components/settings/ConnectForm"
 import { Separator } from "@/components/ui/separator"
 
-interface SettingsTabsProps {
-    isConnected: boolean
-}
-
-export function SettingsTabs({ isConnected }: SettingsTabsProps) {
+export function SettingsTabs() {
     return (
         <Tabs defaultValue="account" className="space-y-4">
             <TabsList>
@@ -34,7 +30,7 @@ export function SettingsTabs({ isConnected }: SettingsTabsProps) {
                     </p>
                 </div>
                 <Separator />
-                <ConnectForm isConnected={isConnected} />
+                <ConnectForm />
             </TabsContent>
         </Tabs>
     )
