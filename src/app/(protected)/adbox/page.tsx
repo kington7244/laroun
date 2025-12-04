@@ -237,7 +237,7 @@ export default function AdBoxPage() {
     return (
         <div className="flex h-[calc(100vh-120px)] gap-4">
             {/* Conversations List */}
-            <Card className="w-96 flex flex-col">
+            <Card className="w-80 flex flex-col overflow-hidden shrink-0">
                 {/* Header */}
                 <div className="p-4 border-b space-y-3">
                     <div className="flex items-center justify-between">
@@ -291,7 +291,8 @@ export default function AdBoxPage() {
                 </div>
 
                 {/* Conversations */}
-                <ScrollArea className="flex-1">
+                <div className="flex-1 overflow-hidden min-h-0">
+                    <ScrollArea className="h-full">
                     {loadingChat ? (
                         <div className="flex items-center justify-center py-8">
                             <Loader2 className="h-6 w-6 animate-spin" />
@@ -358,7 +359,8 @@ export default function AdBoxPage() {
                             })}
                         </div>
                     )}
-                </ScrollArea>
+                    </ScrollArea>
+                </div>
             </Card>
 
             {/* Chat Area */}
