@@ -44,6 +44,13 @@ interface UserSettings {
     twoFactorEnabled: boolean
 }
 
+interface FacebookAccount {
+    isConnected: boolean
+    providerAccountId?: string
+    scope?: string
+    tokenExpires?: Date | null
+}
+
 export default function SettingsPage() {
     const router = useRouter()
     const searchParams = useSearchParams()
@@ -58,8 +65,9 @@ export default function SettingsPage() {
     const [deleteConfirm, setDeleteConfirm] = useState("")
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
     const [deleting, setDeleting] = useState(false)
+    const [facebookAccount, setFacebookAccount] = useState<FacebookAccount>({ isConnected: false })
 
-    // Load settings from database
+    // Load settings and Facebook account from database
     useEffect(() => {
         const loadSettings = async () => {
             try {
@@ -80,7 +88,21 @@ export default function SettingsPage() {
                 setLoading(false)
             }
         }
+        
+        const loadFacebookAccount = async () => {
+            try {
+                const res = await fetch("/api/auth/facebook-status")
+                if (res.ok) {
+                    const data = await res.json()
+                    setFacebookAccount(data)
+                }
+            } catch (error) {
+                console.error("Failed to load Facebook account:", error)
+            }
+        }
+        
         loadSettings()
+        loadFacebookAccount()
     }, [])
 
     // Save setting to database
@@ -236,7 +258,7 @@ export default function SettingsPage() {
                                 </p>
                             </div>
                             <div className="border-t pt-6">
-                                <ConnectForm />
+                                <ConnectForm facebookAccount={facebookAccount} />
                             </div>
                         </div>
                     )}
