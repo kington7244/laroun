@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import { useSession, signOut } from "next-auth/react"
+import { useRouter, useSearchParams } from "next/navigation"
 import { User, Link2, Bell, Shield, Globe, Palette, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AccountForm } from "@/components/settings/AccountForm"
@@ -16,6 +17,7 @@ import { Input } from "@/components/ui/input"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useTheme } from "@/contexts/ThemeContext"
 import { toast } from "sonner"
+import Link from "next/link"
 
 const settingsMenu = [
     { id: "account", name: "Account", icon: User, description: "Manage your account details" },
@@ -43,7 +45,9 @@ interface UserSettings {
 }
 
 export default function SettingsPage() {
-    const [activeSection, setActiveSection] = useState("account")
+    const router = useRouter()
+    const searchParams = useSearchParams()
+    const activeSection = searchParams.get("tab") || "account"
     const { data: session } = useSession()
     const { language, setLanguage } = useLanguage()
     const { theme, setTheme, primaryColor, setPrimaryColor, compactMode, setCompactMode, showAnimations, setShowAnimations } = useTheme()
@@ -178,9 +182,9 @@ export default function SettingsPage() {
                             <h2 className="text-lg font-semibold mb-4 px-2">Settings</h2>
                             <nav className="space-y-1">
                                 {settingsMenu.map((item) => (
-                                    <button
+                                    <Link
                                         key={item.id}
-                                        onClick={() => setActiveSection(item.id)}
+                                        href={`/settings?tab=${item.id}`}
                                         className={cn(
                                             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
                                             activeSection === item.id
@@ -200,7 +204,7 @@ export default function SettingsPage() {
                                                 item.id === "danger" ? "text-red-400" : "text-muted-foreground"
                                             )}>{item.description}</div>
                                         </div>
-                                    </button>
+                                    </Link>
                                 ))}
                             </nav>
                         </div>

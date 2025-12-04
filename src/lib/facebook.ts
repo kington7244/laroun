@@ -515,3 +515,109 @@ export const getInsights = async (accessToken: string, objectId: string, objectT
 
     return [] // Placeholder for now, will implement in the route logic for batching
 }
+
+// ===== Facebook Pages API Functions (for AdBox) =====
+
+export async function getPages(accessToken: string) {
+    const response = await fetch(
+        `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,category,picture&access_token=${accessToken}`
+    )
+    const data = await response.json()
+    
+    if (data.error) {
+        throw new Error(data.error.message)
+    }
+    
+    return data.data || []
+}
+
+export async function getPageConversations(userAccessToken: string, pageId: string, pageAccessToken?: string) {
+    const token = pageAccessToken || userAccessToken
+    
+    const response = await fetch(
+        `https://graph.facebook.com/v21.0/${pageId}/conversations?` +
+        `fields=id,snippet,updated_time,unread_count,participants,link&` +
+        `limit=50&access_token=${token}`
+    )
+    const data = await response.json()
+    
+    if (data.error) {
+        console.error(`Error fetching conversations for page ${pageId}:`, data.error)
+        return []
+    }
+    
+    return data.data || []
+}
+
+export async function getConversationMessages(
+    userAccessToken: string, 
+    conversationId: string, 
+    pageId: string, 
+    pageAccessToken?: string
+) {
+    const token = pageAccessToken || userAccessToken
+    
+    const response = await fetch(
+        `https://graph.facebook.com/v21.0/${conversationId}/messages?` +
+        `fields=id,message,from,created_time,attachments,sticker&` +
+        `limit=50&access_token=${token}`
+    )
+    const data = await response.json()
+    
+    if (data.error) {
+        console.error(`Error fetching messages for conversation ${conversationId}:`, data.error)
+        return []
+    }
+    
+    return data.data || []
+}
+
+export async function sendMessage(
+    userAccessToken: string,
+    pageId: string,
+    recipientId: string,
+    messageText: string
+) {
+    // First, get page access token
+    const pagesResponse = await fetch(
+        `https://graph.facebook.com/v21.0/${pageId}?fields=access_token&access_token=${userAccessToken}`
+    )
+    const pageData = await pagesResponse.json()
+    
+    if (pageData.error) {
+        throw new Error(pageData.error.message)
+    }
+    
+    const pageAccessToken = pageData.access_token
+    
+    // Send message using Page token
+    const response = await fetch(
+        `https://graph.facebook.com/v21.0/${pageId}/messages`,
+        {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                recipient: { id: recipientId },
+                message: { text: messageText },
+                messaging_type: 'RESPONSE',
+                access_token: pageAccessToken
+            })
+        }
+    )
+    
+    const data = await response.json()
+    
+    if (data.error) {
+        throw new Error(data.error.message)
+    }
+    
+    return data
+}
+
+export async function getPageProfilePicture(pageId: string, accessToken: string) {
+    const response = await fetch(
+        `https://graph.facebook.com/v21.0/${pageId}/picture?redirect=false&access_token=${accessToken}`
+    )
+    const data = await response.json()
+    return data.data?.url || null
+}

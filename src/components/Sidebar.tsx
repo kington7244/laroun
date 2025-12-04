@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, Wallet, CreditCard, BarChart3, Megaphone, Receipt } from "lucide-react"
+import { LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, Wallet, CreditCard, BarChart3, Megaphone, Receipt, MessageCircle } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { signOut } from "next-auth/react"
 import { useLanguage } from "@/contexts/LanguageContext"
@@ -21,6 +21,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
     const navigation = [
         { name: t.common.dashboard, href: "/dashboard", icon: LayoutDashboard },
         { name: t.common.adManager, href: "/admanager", icon: Megaphone },
+        { name: "AdBox", href: "/adbox", icon: MessageCircle },
         { name: t.common.payments, href: "/payments", icon: Receipt },
         { name: t.common.assets, href: "/assets", icon: Wallet },
         { name: t.common.cards, href: "/cards", icon: CreditCard },
