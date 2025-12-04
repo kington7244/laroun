@@ -1,8 +1,8 @@
 "use client"
 
-import { useState } from "react"
-import { useSession } from "next-auth/react"
-import { User, Link2, Bell, Shield, Globe, Palette } from "lucide-react"
+import { useState, useEffect } from "react"
+import { useSession, signOut } from "next-auth/react"
+import { User, Link2, Bell, Shield, Globe, Palette, Trash2 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { AccountForm } from "@/components/settings/AccountForm"
 import { ConnectForm } from "@/components/settings/ConnectForm"
@@ -10,8 +10,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
+import { Button } from "@/components/ui/button"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Input } from "@/components/ui/input"
 import { useLanguage } from "@/contexts/LanguageContext"
 import { useTheme } from "@/contexts/ThemeContext"
+import { toast } from "sonner"
 
 const settingsMenu = [
     { id: "account", name: "Account", icon: User, description: "Manage your account details" },
@@ -20,13 +24,132 @@ const settingsMenu = [
     { id: "security", name: "Security", icon: Shield, description: "Security settings" },
     { id: "language", name: "Language", icon: Globe, description: "Language & region" },
     { id: "appearance", name: "Appearance", icon: Palette, description: "Theme settings" },
+    { id: "danger", name: "Delete Account", icon: Trash2, description: "Permanently delete account" },
 ]
+
+interface UserSettings {
+    language: string
+    timezone: string
+    currency: string
+    theme: string
+    primaryColor: string
+    compactMode: boolean
+    showAnimations: boolean
+    emailNotifications: boolean
+    campaignAlerts: boolean
+    weeklyReports: boolean
+    budgetAlerts: boolean
+    twoFactorEnabled: boolean
+}
 
 export default function SettingsPage() {
     const [activeSection, setActiveSection] = useState("account")
     const { data: session } = useSession()
     const { language, setLanguage } = useLanguage()
     const { theme, setTheme, primaryColor, setPrimaryColor, compactMode, setCompactMode, showAnimations, setShowAnimations } = useTheme()
+    
+    const [settings, setSettings] = useState<UserSettings | null>(null)
+    const [loading, setLoading] = useState(true)
+    const [saving, setSaving] = useState(false)
+    const [deleteConfirm, setDeleteConfirm] = useState("")
+    const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
+    const [deleting, setDeleting] = useState(false)
+
+    // Load settings from database
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const res = await fetch("/api/settings")
+                if (res.ok) {
+                    const data = await res.json()
+                    setSettings(data)
+                    // Sync with context
+                    if (data.language) setLanguage(data.language as 'en' | 'th')
+                    if (data.theme) setTheme(data.theme as any)
+                    if (data.primaryColor) setPrimaryColor(data.primaryColor as any)
+                    if (data.compactMode !== undefined) setCompactMode(data.compactMode)
+                    if (data.showAnimations !== undefined) setShowAnimations(data.showAnimations)
+                }
+            } catch (error) {
+                console.error("Failed to load settings:", error)
+            } finally {
+                setLoading(false)
+            }
+        }
+        loadSettings()
+    }, [])
+
+    // Save setting to database
+    const saveSetting = async (key: string, value: any) => {
+        setSaving(true)
+        try {
+            const res = await fetch("/api/settings", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ [key]: value })
+            })
+            if (res.ok) {
+                const data = await res.json()
+                setSettings(data)
+                toast.success("Setting saved")
+            } else {
+                toast.error("Failed to save setting")
+            }
+        } catch (error) {
+            toast.error("Failed to save setting")
+        } finally {
+            setSaving(false)
+        }
+    }
+
+    // Handle setting change with save
+    const handleSettingChange = (key: string, value: any) => {
+        // Update context immediately for UX
+        switch (key) {
+            case 'language':
+                setLanguage(value as 'en' | 'th')
+                break
+            case 'theme':
+                setTheme(value)
+                break
+            case 'primaryColor':
+                setPrimaryColor(value)
+                break
+            case 'compactMode':
+                setCompactMode(value)
+                break
+            case 'showAnimations':
+                setShowAnimations(value)
+                break
+        }
+        // Save to database
+        saveSetting(key, value)
+    }
+
+    // Delete account
+    const handleDeleteAccount = async () => {
+        if (deleteConfirm !== "DELETE") {
+            toast.error("Please type DELETE to confirm")
+            return
+        }
+        
+        setDeleting(true)
+        try {
+            const res = await fetch("/api/account/delete", {
+                method: "DELETE"
+            })
+            if (res.ok) {
+                toast.success("Account deleted successfully")
+                signOut({ callbackUrl: "/" })
+            } else {
+                toast.error("Failed to delete account")
+            }
+        } catch (error) {
+            toast.error("Failed to delete account")
+        } finally {
+            setDeleting(false)
+        }
+    }
 
     const primaryColors = [
         { id: "sky", name: "Sky", color: "bg-sky-100" },
@@ -61,14 +184,21 @@ export default function SettingsPage() {
                                         className={cn(
                                             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
                                             activeSection === item.id
-                                                ? "bg-primary/10 text-primary"
-                                                : "text-gray-600 hover:bg-white"
+                                                ? item.id === "danger" 
+                                                    ? "bg-red-50 text-red-600"
+                                                    : "bg-primary/10 text-primary"
+                                                : item.id === "danger"
+                                                    ? "text-red-500 hover:bg-red-50"
+                                                    : "text-gray-600 hover:bg-white"
                                         )}
                                     >
                                         <item.icon className="w-5 h-5" />
                                         <div>
                                             <div className="font-medium text-sm">{item.name}</div>
-                                            <div className="text-xs text-muted-foreground">{item.description}</div>
+                                            <div className={cn(
+                                                "text-xs",
+                                                item.id === "danger" ? "text-red-400" : "text-muted-foreground"
+                                            )}>{item.description}</div>
                                         </div>
                                     </button>
                                 ))}
@@ -121,28 +251,40 @@ export default function SettingsPage() {
                                         <Label className="font-medium">Email Notifications</Label>
                                         <p className="text-sm text-muted-foreground">Receive email updates about your ads</p>
                                     </div>
-                                    <Switch defaultChecked />
+                                    <Switch 
+                                        checked={settings?.emailNotifications ?? true}
+                                        onCheckedChange={(v) => handleSettingChange('emailNotifications', v)}
+                                    />
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <Label className="font-medium">Campaign Alerts</Label>
                                         <p className="text-sm text-muted-foreground">Get notified when campaigns need attention</p>
                                     </div>
-                                    <Switch defaultChecked />
+                                    <Switch 
+                                        checked={settings?.campaignAlerts ?? true}
+                                        onCheckedChange={(v) => handleSettingChange('campaignAlerts', v)}
+                                    />
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <Label className="font-medium">Weekly Reports</Label>
                                         <p className="text-sm text-muted-foreground">Receive weekly performance reports</p>
                                     </div>
-                                    <Switch />
+                                    <Switch 
+                                        checked={settings?.weeklyReports ?? false}
+                                        onCheckedChange={(v) => handleSettingChange('weeklyReports', v)}
+                                    />
                                 </div>
                                 <div className="flex items-center justify-between">
                                     <div>
                                         <Label className="font-medium">Budget Alerts</Label>
                                         <p className="text-sm text-muted-foreground">Alert when budget is running low</p>
                                     </div>
-                                    <Switch defaultChecked />
+                                    <Switch 
+                                        checked={settings?.budgetAlerts ?? true}
+                                        onCheckedChange={(v) => handleSettingChange('budgetAlerts', v)}
+                                    />
                                 </div>
                             </div>
                         </div>
@@ -164,8 +306,13 @@ export default function SettingsPage() {
                                     </CardHeader>
                                     <CardContent>
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-muted-foreground">Status: Not enabled</span>
-                                            <Switch />
+                                            <span className="text-sm text-muted-foreground">
+                                                Status: {settings?.twoFactorEnabled ? "Enabled" : "Not enabled"}
+                                            </span>
+                                            <Switch 
+                                                checked={settings?.twoFactorEnabled ?? false}
+                                                onCheckedChange={(v) => handleSettingChange('twoFactorEnabled', v)}
+                                            />
                                         </div>
                                     </CardContent>
                                 </Card>
@@ -195,7 +342,10 @@ export default function SettingsPage() {
                             <div className="border-t pt-6 space-y-4">
                                 <div className="space-y-2">
                                     <Label className="font-medium">Display Language</Label>
-                                    <Select value={language} onValueChange={(value: 'en' | 'th') => setLanguage(value)}>
+                                    <Select 
+                                        value={settings?.language || language} 
+                                        onValueChange={(value) => handleSettingChange('language', value)}
+                                    >
                                         <SelectTrigger className="w-[200px]">
                                             <SelectValue placeholder="Select language" />
                                         </SelectTrigger>
@@ -207,7 +357,10 @@ export default function SettingsPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="font-medium">Timezone</Label>
-                                    <Select defaultValue="asia-bangkok">
+                                    <Select 
+                                        value={settings?.timezone || "asia-bangkok"}
+                                        onValueChange={(value) => handleSettingChange('timezone', value)}
+                                    >
                                         <SelectTrigger className="w-[280px]">
                                             <SelectValue placeholder="Select timezone" />
                                         </SelectTrigger>
@@ -221,7 +374,10 @@ export default function SettingsPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <Label className="font-medium">Currency Display</Label>
-                                    <Select defaultValue="usd">
+                                    <Select 
+                                        value={settings?.currency || "usd"}
+                                        onValueChange={(value) => handleSettingChange('currency', value)}
+                                    >
                                         <SelectTrigger className="w-[200px]">
                                             <SelectValue placeholder="Select currency" />
                                         </SelectTrigger>
@@ -249,34 +405,34 @@ export default function SettingsPage() {
                                     <Label className="font-medium">Theme</Label>
                                     <div className="flex gap-3">
                                         <button 
-                                            onClick={() => setTheme("light")}
+                                            onClick={() => handleSettingChange('theme', 'light')}
                                             className={cn(
                                                 "flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition-all",
-                                                theme === "light" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                                                (settings?.theme || theme) === "light" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
                                             )}
                                         >
                                             <div className="w-16 h-10 bg-white border rounded shadow-sm"></div>
-                                            <span className={cn("text-sm", theme === "light" ? "font-medium text-primary" : "")}>Light</span>
+                                            <span className={cn("text-sm", (settings?.theme || theme) === "light" ? "font-medium text-primary" : "")}>Light</span>
                                         </button>
                                         <button 
-                                            onClick={() => setTheme("dark")}
+                                            onClick={() => handleSettingChange('theme', 'dark')}
                                             className={cn(
                                                 "flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition-all",
-                                                theme === "dark" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                                                (settings?.theme || theme) === "dark" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
                                             )}
                                         >
                                             <div className="w-16 h-10 bg-gray-900 rounded shadow-sm"></div>
-                                            <span className={cn("text-sm", theme === "dark" ? "font-medium text-primary" : "")}>Dark</span>
+                                            <span className={cn("text-sm", (settings?.theme || theme) === "dark" ? "font-medium text-primary" : "")}>Dark</span>
                                         </button>
                                         <button 
-                                            onClick={() => setTheme("system")}
+                                            onClick={() => handleSettingChange('theme', 'system')}
                                             className={cn(
                                                 "flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition-all",
-                                                theme === "system" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                                                (settings?.theme || theme) === "system" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
                                             )}
                                         >
                                             <div className="w-16 h-10 bg-gradient-to-b from-white to-gray-900 rounded shadow-sm"></div>
-                                            <span className={cn("text-sm", theme === "system" ? "font-medium text-primary" : "")}>System</span>
+                                            <span className={cn("text-sm", (settings?.theme || theme) === "system" ? "font-medium text-primary" : "")}>System</span>
                                         </button>
                                     </div>
                                 </div>
@@ -287,14 +443,14 @@ export default function SettingsPage() {
                                         {primaryColors.map((color) => (
                                             <button
                                                 key={color.id}
-                                                onClick={() => setPrimaryColor(color.id as any)}
+                                                onClick={() => handleSettingChange('primaryColor', color.id)}
                                                 className={cn(
                                                     "flex flex-col items-center gap-2 p-3 border-2 rounded-lg transition-all min-w-[80px]",
-                                                    primaryColor === color.id ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                                                    (settings?.primaryColor || primaryColor) === color.id ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
                                                 )}
                                             >
                                                 <div className={cn("w-8 h-8 rounded-full shadow-sm", color.color)}></div>
-                                                <span className={cn("text-xs", primaryColor === color.id ? "font-medium text-primary" : "")}>{color.name}</span>
+                                                <span className={cn("text-xs", (settings?.primaryColor || primaryColor) === color.id ? "font-medium text-primary" : "")}>{color.name}</span>
                                             </button>
                                         ))}
                                     </div>
@@ -305,15 +461,99 @@ export default function SettingsPage() {
                                         <Label className="font-medium">Compact Mode</Label>
                                         <p className="text-sm text-muted-foreground">Use smaller spacing and fonts</p>
                                     </div>
-                                    <Switch checked={compactMode} onCheckedChange={setCompactMode} />
+                                    <Switch 
+                                        checked={settings?.compactMode ?? compactMode} 
+                                        onCheckedChange={(v) => handleSettingChange('compactMode', v)} 
+                                    />
                                 </div>
                                 <div className="flex items-center justify-between py-2">
                                     <div>
                                         <Label className="font-medium">Show Animations</Label>
                                         <p className="text-sm text-muted-foreground">Enable UI animations</p>
                                     </div>
-                                    <Switch checked={showAnimations} onCheckedChange={setShowAnimations} />
+                                    <Switch 
+                                        checked={settings?.showAnimations ?? showAnimations} 
+                                        onCheckedChange={(v) => handleSettingChange('showAnimations', v)} 
+                                    />
                                 </div>
+                            </div>
+                        </div>
+                    )}
+
+                    {activeSection === "danger" && (
+                        <div className="space-y-6">
+                            <div>
+                                <h3 className="text-xl font-semibold text-red-600">Delete Account</h3>
+                                <p className="text-muted-foreground text-sm mt-1">
+                                    Permanently delete your account and all associated data
+                                </p>
+                            </div>
+                            <div className="border-t pt-6">
+                                <Card className="border-red-200 bg-red-50">
+                                    <CardHeader>
+                                        <CardTitle className="text-red-600 flex items-center gap-2">
+                                            <Trash2 className="w-5 h-5" />
+                                            Danger Zone
+                                        </CardTitle>
+                                        <CardDescription className="text-red-500">
+                                            This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
+                                        </CardDescription>
+                                    </CardHeader>
+                                    <CardContent className="space-y-4">
+                                        <div className="text-sm text-gray-700">
+                                            <p className="font-medium mb-2">Deleting your account will:</p>
+                                            <ul className="list-disc list-inside space-y-1 text-gray-600">
+                                                <li>Remove all your personal information</li>
+                                                <li>Disconnect all linked accounts (Facebook, Google)</li>
+                                                <li>Delete all your ad accounts and data</li>
+                                                <li>Remove all settings and preferences</li>
+                                            </ul>
+                                        </div>
+                                        
+                                        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                                            <DialogTrigger asChild>
+                                                <Button variant="destructive" className="w-full">
+                                                    <Trash2 className="w-4 h-4 mr-2" />
+                                                    Delete My Account
+                                                </Button>
+                                            </DialogTrigger>
+                                            <DialogContent>
+                                                <DialogHeader>
+                                                    <DialogTitle className="text-red-600">Are you absolutely sure?</DialogTitle>
+                                                    <DialogDescription>
+                                                        This action cannot be undone. Please type <strong>DELETE</strong> to confirm.
+                                                    </DialogDescription>
+                                                </DialogHeader>
+                                                <div className="py-4">
+                                                    <Input
+                                                        placeholder="Type DELETE to confirm"
+                                                        value={deleteConfirm}
+                                                        onChange={(e) => setDeleteConfirm(e.target.value)}
+                                                        className="border-red-200 focus:border-red-500"
+                                                    />
+                                                </div>
+                                                <DialogFooter>
+                                                    <Button 
+                                                        variant="outline" 
+                                                        onClick={() => {
+                                                            setDeleteDialogOpen(false)
+                                                            setDeleteConfirm("")
+                                                        }}
+                                                    >
+                                                        Cancel
+                                                    </Button>
+                                                    <Button 
+                                                        variant="destructive" 
+                                                        onClick={handleDeleteAccount}
+                                                        disabled={deleteConfirm !== "DELETE" || deleting}
+                                                    >
+                                                        {deleting ? "Deleting..." : "Delete Account"}
+                                                    </Button>
+                                                </DialogFooter>
+                                            </DialogContent>
+                                        </Dialog>
+                                    </CardContent>
+                                </Card>
                             </div>
                         </div>
                     )}

@@ -15,6 +15,21 @@ model User {
   password       String?
   image          String?
   facebookAdToken String?  @db.Text
+  
+  // User Settings
+  language       String    @default("en")
+  timezone       String    @default("asia-bangkok")
+  currency       String    @default("usd")
+  theme          String    @default("light")
+  primaryColor   String    @default("sky")
+  compactMode    Boolean   @default(false)
+  showAnimations Boolean   @default(true)
+  emailNotifications Boolean @default(true)
+  campaignAlerts    Boolean @default(true)
+  weeklyReports     Boolean @default(false)
+  budgetAlerts      Boolean @default(true)
+  twoFactorEnabled  Boolean @default(false)
+  
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
   accounts       Account[]
