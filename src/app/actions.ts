@@ -105,13 +105,29 @@ export async function fetchPages() {
     }
 
     const userId = (session.user as any).id;
+    
+    // First try to get token from User.facebookAdToken
     const user = await prisma.user.findUnique({ 
         where: { id: userId },
         select: { facebookAdToken: true }
     });
 
-    const accessToken = user?.facebookAdToken;
+    let accessToken = user?.facebookAdToken;
+    
+    // If no token in User, try to get from Account table (OAuth login)
     if (!accessToken) {
+        const account = await prisma.account.findFirst({
+            where: { 
+                userId: userId,
+                provider: "facebook"
+            },
+            select: { access_token: true }
+        });
+        accessToken = account?.access_token || null;
+    }
+
+    if (!accessToken) {
+        console.log('[fetchPages] No Facebook token found for user');
         return []; // Return empty array if no token
     }
 
@@ -131,13 +147,29 @@ export async function fetchConversations(pages: { id: string, access_token?: str
     }
 
     const userId = (session.user as any).id;
+    
+    // First try to get token from User.facebookAdToken
     const user = await prisma.user.findUnique({ 
         where: { id: userId },
         select: { facebookAdToken: true }
     });
 
-    const accessToken = user?.facebookAdToken;
+    let accessToken = user?.facebookAdToken;
+    
+    // If no token in User, try to get from Account table (OAuth login)
     if (!accessToken) {
+        const account = await prisma.account.findFirst({
+            where: { 
+                userId: userId,
+                provider: "facebook"
+            },
+            select: { access_token: true }
+        });
+        accessToken = account?.access_token || null;
+    }
+
+    if (!accessToken) {
+        console.log('[fetchConversations] No Facebook token found for user');
         return [];
     }
 
@@ -210,13 +242,29 @@ export async function fetchMessages(conversationId: string, pageId: string, page
     }
 
     const userId = (session.user as any).id;
+    
+    // First try to get token from User.facebookAdToken
     const user = await prisma.user.findUnique({ 
         where: { id: userId },
         select: { facebookAdToken: true }
     });
 
-    const accessToken = user?.facebookAdToken;
+    let accessToken = user?.facebookAdToken;
+    
+    // If no token in User, try to get from Account table (OAuth login)
     if (!accessToken) {
+        const account = await prisma.account.findFirst({
+            where: { 
+                userId: userId,
+                provider: "facebook"
+            },
+            select: { access_token: true }
+        });
+        accessToken = account?.access_token || null;
+    }
+
+    if (!accessToken) {
+        console.log('[fetchMessages] No Facebook token found for user');
         return [];
     }
 
@@ -236,12 +284,27 @@ export async function sendReply(pageId: string, recipientId: string, messageText
     }
 
     const userId = (session.user as any).id;
+    
+    // First try to get token from User.facebookAdToken
     const user = await prisma.user.findUnique({ 
         where: { id: userId },
         select: { facebookAdToken: true }
     });
 
-    const accessToken = user?.facebookAdToken;
+    let accessToken = user?.facebookAdToken;
+    
+    // If no token in User, try to get from Account table (OAuth login)
+    if (!accessToken) {
+        const account = await prisma.account.findFirst({
+            where: { 
+                userId: userId,
+                provider: "facebook"
+            },
+            select: { access_token: true }
+        });
+        accessToken = account?.access_token || null;
+    }
+
     if (!accessToken) {
         throw new Error("No Facebook token found");
     }

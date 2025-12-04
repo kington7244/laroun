@@ -33,7 +33,7 @@ export const authOptions: NextAuthOptions = {
             allowDangerousEmailAccountLinking: true,
             authorization: {
                 params: {
-                    scope: "email,public_profile,ads_read,ads_management,pages_read_engagement,pages_show_list",
+                    scope: "email,public_profile,ads_read,ads_management,pages_read_engagement,pages_show_list,pages_messaging,pages_manage_metadata",
                 },
             },
         }),
