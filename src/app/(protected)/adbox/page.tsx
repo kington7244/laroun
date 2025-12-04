@@ -292,76 +292,74 @@ export default function AdBoxPage() {
 
                 {/* Conversations */}
                 <div className="flex-1 overflow-hidden min-h-0">
-                    <ScrollArea className="h-full w-full">
-                        <div className="pr-3">
-                    {loadingChat ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 className="h-6 w-6 animate-spin" />
-                        </div>
-                    ) : filteredConversations.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
-                            <MessageCircle className="h-8 w-8 mb-2" />
-                            <p>No conversations found</p>
-                        </div>
-                    ) : (
-                        <div className="p-2 pr-1">
-                            {filteredConversations.map(conv => {
-                                const participant = conv.participants?.data?.[0];
-                                const isSelected = selectedConversation?.id === conv.id;
-                                
-                                return (
-                                    <div
-                                        key={conv.id}
-                                        className={`p-2 rounded-lg cursor-pointer transition-colors mb-1 ${
-                                            isSelected 
-                                                ? 'bg-primary/10' 
-                                                : 'hover:bg-muted'
-                                        }`}
-                                        onClick={() => selectConversation(conv)}
-                                    >
-                                        <div className="flex gap-2">
-                                            <Avatar className="h-9 w-9 shrink-0">
-                                                <AvatarFallback className="text-sm">
-                                                    {(participant?.name || 'U')[0]}
-                                                </AvatarFallback>
-                                            </Avatar>
-                                            <div className="flex-1 min-w-0 overflow-hidden">
-                                                <div className="flex items-center justify-between gap-1">
-                                                    <span className={`font-medium truncate text-sm ${
-                                                        conv.unread_count > 0 ? 'text-foreground' : 'text-muted-foreground'
-                                                    }`}>
-                                                        {participant?.name || 'Facebook User'}
-                                                    </span>
-                                                    <span className="text-xs text-muted-foreground shrink-0">
-                                                        {formatTime(conv.updated_time)}
-                                                    </span>
-                                                </div>
-                                                <p className={`text-xs truncate ${
-                                                    conv.unread_count > 0 
-                                                        ? 'text-foreground font-medium' 
-                                                        : 'text-muted-foreground'
-                                                }`}>
-                                                    {conv.snippet || 'No message preview'}
-                                                </p>
-                                                <div className="flex items-center justify-between mt-0.5 gap-1">
-                                                    <span className="text-xs text-muted-foreground truncate flex-1">
-                                                        {getPageName(conv.pageId)}
-                                                    </span>
-                                                    {conv.unread_count > 0 && (
-                                                        <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full shrink-0">
-                                                            {conv.unread_count}
+                    <div className="h-full overflow-y-auto">
+                        {loadingChat ? (
+                            <div className="flex items-center justify-center py-8">
+                                <Loader2 className="h-6 w-6 animate-spin" />
+                            </div>
+                        ) : filteredConversations.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-8 text-muted-foreground">
+                                <MessageCircle className="h-8 w-8 mb-2" />
+                                <p>No conversations found</p>
+                            </div>
+                        ) : (
+                            <div className="p-2">
+                                {filteredConversations.map(conv => {
+                                    const participant = conv.participants?.data?.[0];
+                                    const isSelected = selectedConversation?.id === conv.id;
+                                    
+                                    return (
+                                        <div
+                                            key={conv.id}
+                                            className={`p-2 rounded-lg cursor-pointer transition-colors mb-1 ${
+                                                isSelected 
+                                                    ? 'bg-primary/10 ring-1 ring-primary/30' 
+                                                    : 'hover:bg-muted'
+                                            }`}
+                                            onClick={() => selectConversation(conv)}
+                                        >
+                                            <div className="flex gap-2">
+                                                <Avatar className="h-9 w-9 shrink-0">
+                                                    <AvatarFallback className="text-sm">
+                                                        {(participant?.name || 'U')[0]}
+                                                    </AvatarFallback>
+                                                </Avatar>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-1">
+                                                        <span className={`font-medium truncate text-sm flex-1 ${
+                                                            conv.unread_count > 0 ? 'text-foreground' : 'text-muted-foreground'
+                                                        }`}>
+                                                            {participant?.name || 'Facebook User'}
                                                         </span>
-                                                    )}
+                                                        <span className="text-xs text-muted-foreground shrink-0">
+                                                            {formatTime(conv.updated_time)}
+                                                        </span>
+                                                    </div>
+                                                    <p className={`text-xs truncate ${
+                                                        conv.unread_count > 0 
+                                                            ? 'text-foreground font-medium' 
+                                                            : 'text-muted-foreground'
+                                                    }`}>
+                                                        {conv.snippet || 'No message preview'}
+                                                    </p>
+                                                    <div className="flex items-center gap-1 mt-0.5">
+                                                        <span className="text-xs text-muted-foreground truncate flex-1">
+                                                            {getPageName(conv.pageId)}
+                                                        </span>
+                                                        {conv.unread_count > 0 && (
+                                                            <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full shrink-0">
+                                                                {conv.unread_count}
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
-                                );
-                            })}
-                        </div>
-                    )}
-                        </div>
-                    </ScrollArea>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
                 </div>
             </Card>
 
