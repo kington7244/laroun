@@ -32,6 +32,7 @@ export async function POST(req: Request) {
                 name,
                 email,
                 password: hashedPassword,
+                role: 'host', // New users who register are always host
             },
         })
 

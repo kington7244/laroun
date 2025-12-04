@@ -6,10 +6,40 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { db } from "@/lib/db"
 import { compare } from "bcryptjs"
 import { logActivity } from "@/lib/activity-log"
+import { Adapter } from "next-auth/adapters"
+
+// Custom adapter that sets role to 'host' for new users
+function CustomPrismaAdapter(): Adapter {
+    const prismaAdapter = PrismaAdapter(db)
+    
+    return {
+        ...prismaAdapter,
+        createUser: async (data) => {
+            // Check if user already exists (was pre-created by host adding to team)
+            const existingUser = await db.user.findUnique({
+                where: { email: data.email! }
+            })
+            
+            if (existingUser) {
+                // User was pre-created (appointed by host), keep their role
+                return existingUser
+            }
+            
+            // New user - create with role 'host'
+            const user = await db.user.create({
+                data: {
+                    ...data,
+                    role: 'host', // New users who sign up are always host
+                }
+            })
+            return user
+        }
+    }
+}
 
 export const authOptions: NextAuthOptions = {
     debug: true,
-    adapter: PrismaAdapter(db),
+    adapter: CustomPrismaAdapter(),
     session: {
         strategy: "jwt",
     },
@@ -85,20 +115,32 @@ export const authOptions: NextAuthOptions = {
                 user: {
                     ...session.user,
                     id: token.id as string,
+                    name: token.name as string | undefined,
                     role: token.role as string,
                     image: token.picture as string | undefined,
                 },
             }
         },
-        async jwt({ token, user, account, profile, trigger }) {
+        async jwt({ token, user, account, profile, trigger, session }) {
+            // Handle session update (when user updates profile)
+            if (trigger === 'update' && session) {
+                // Update token with new data from session
+                if (session.name) token.name = session.name
+                if (session.image) token.picture = session.image
+                return token
+            }
+            
             if (user) {
                 token.id = user.id
                 // Fetch role from database
                 const dbUser = await db.user.findUnique({
                     where: { id: user.id },
-                    select: { role: true, email: true, name: true }
+                    select: { role: true, email: true, name: true, image: true }
                 })
-                token.role = dbUser?.role || 'staff'
+                // New users (OAuth) are host by default
+                // If user was appointed by a host (admin/staff), keep that role
+                token.role = dbUser?.role || 'host'
+                token.name = dbUser?.name || user.name
                 
                 // Log login activity
                 logActivity({

@@ -16,7 +16,7 @@ model User {
   image          String?
   facebookAdToken String?  @db.Text
   facebookName   String?   // Name from connected Facebook account
-  role           String    @default("staff") // host, admin, staff
+  role           String    @default("host") // host, admin, staff - new users are host by default
   
   // User Settings
   language       String    @default("en")
