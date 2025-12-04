@@ -27,6 +27,9 @@ export async function GET() {
                 weeklyReports: true,
                 budgetAlerts: true,
                 twoFactorEnabled: true,
+                adboxSoundEnabled: true,
+                adboxBrowserNotification: true,
+                adboxInAppNotification: true,
             }
         })
 
@@ -56,7 +59,8 @@ export async function PUT(request: NextRequest) {
         const allowedFields = [
             'language', 'timezone', 'currency', 'theme', 'primaryColor',
             'compactMode', 'showAnimations', 'emailNotifications',
-            'campaignAlerts', 'weeklyReports', 'budgetAlerts', 'twoFactorEnabled'
+            'campaignAlerts', 'weeklyReports', 'budgetAlerts', 'twoFactorEnabled',
+            'adboxSoundEnabled', 'adboxBrowserNotification', 'adboxInAppNotification'
         ]
         
         const updateData: Record<string, any> = {}
@@ -82,6 +86,9 @@ export async function PUT(request: NextRequest) {
                 weeklyReports: true,
                 budgetAlerts: true,
                 twoFactorEnabled: true,
+                adboxSoundEnabled: true,
+                adboxBrowserNotification: true,
+                adboxInAppNotification: true,
             }
         })
 

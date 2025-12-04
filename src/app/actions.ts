@@ -7,7 +7,7 @@ import {
     getAdAccounts, 
     getPages, 
     getPageConversations, 
-    getConversationMessages, 
+    getAllConversationMessages, 
     sendMessage 
 } from '@/lib/facebook';
 
@@ -23,6 +23,8 @@ export async function saveFacebookToken(shortLivedToken: string) {
 
     // Exchange short-lived token for long-lived token
     let longLivedToken = shortLivedToken;
+    let facebookName: string | null = null;
+    
     try {
         const exchangeUrl = `https://graph.facebook.com/v21.0/oauth/access_token?` +
             `grant_type=fb_exchange_token&` +
@@ -40,11 +42,26 @@ export async function saveFacebookToken(shortLivedToken: string) {
     } catch (err) {
         console.error('[Token Exchange] Error:', err);
     }
+    
+    // Get Facebook user name from /me endpoint
+    try {
+        const meResponse = await fetch(`https://graph.facebook.com/v21.0/me?fields=name&access_token=${longLivedToken}`);
+        const meData = await meResponse.json();
+        if (meData.name) {
+            facebookName = meData.name;
+            console.log('[Token Exchange] Got Facebook name:', facebookName);
+        }
+    } catch (err) {
+        console.error('[Token Exchange] Error getting Facebook name:', err);
+    }
 
-    // Save token to user
+    // Save token and Facebook name to user
     await prisma.user.update({
         where: { id: userId },
-        data: { facebookAdToken: longLivedToken }
+        data: { 
+            facebookAdToken: longLivedToken,
+            facebookName: facebookName
+        }
     });
 
     // Subscribe pages to webhook in background
@@ -239,7 +256,8 @@ export async function fetchConversations(pages: { id: string, access_token?: str
                     snippet: conv.snippet,
                     updatedTime: new Date(conv.updated_time),
                     unreadCount: conv.unread_count || 0,
-                    facebookLink: conv.facebookLink
+                    facebookLink: conv.facebookLink,
+                    facebookConversationId: conv.id  // Save Facebook conversation ID
                 }).catch(e => console.error('Failed to save conversation:', e))
             )
         );
@@ -251,7 +269,7 @@ export async function fetchConversations(pages: { id: string, access_token?: str
     }
 }
 
-export async function fetchMessages(conversationId: string, pageId: string, pageAccessToken?: string) {
+export async function fetchMessages(conversationId: string, pageId: string, pageAccessToken?: string, facebookConversationId?: string) {
     const session = await getServerSession(authOptions);
     if (!session?.user) {
         throw new Error("Not authenticated");
@@ -259,7 +277,36 @@ export async function fetchMessages(conversationId: string, pageId: string, page
 
     const userId = (session.user as any).id;
     
-    // First try to get token from User.facebookAdToken
+    // First, try to get messages from database (instant display)
+    const dbMessages = await prisma.message.findMany({
+        where: { conversationId },
+        orderBy: { createdTime: 'asc' }
+    });
+    
+    // Format DB messages
+    const formattedDbMessages = dbMessages.map(m => ({
+        id: m.id,
+        message: m.text,
+        from: { id: m.from },
+        created_time: m.createdTime.toISOString(),
+        attachments: m.attachments ? JSON.parse(m.attachments) : undefined,
+        sticker: m.stickerUrl ? { url: m.stickerUrl } : undefined,
+        isFromPage: m.isFromPage
+    }));
+
+    // Determine which ID to use for Facebook API
+    const fbConvId = facebookConversationId || conversationId;
+
+    // If we have cached messages, return them first
+    if (formattedDbMessages.length > 0) {
+        // Try to sync from Facebook in background (don't wait)
+        syncMessagesFromFacebook(conversationId, pageId, userId, pageAccessToken, fbConvId).catch(e => 
+            console.error('[fetchMessages] Background sync error:', e)
+        );
+        return formattedDbMessages;
+    }
+    
+    // No cache, try to fetch from Facebook
     const user = await prisma.user.findUnique({ 
         where: { id: userId },
         select: { facebookAdToken: true }
@@ -267,13 +314,9 @@ export async function fetchMessages(conversationId: string, pageId: string, page
 
     let accessToken = user?.facebookAdToken;
     
-    // If no token in User, try to get from Account table (OAuth login)
     if (!accessToken) {
         const account = await prisma.account.findFirst({
-            where: { 
-                userId: userId,
-                provider: "facebook"
-            },
+            where: { userId, provider: "facebook" },
             select: { access_token: true }
         });
         accessToken = account?.access_token || null;
@@ -281,15 +324,88 @@ export async function fetchMessages(conversationId: string, pageId: string, page
 
     if (!accessToken) {
         console.log('[fetchMessages] No Facebook token found for user');
-        return [];
+        return formattedDbMessages;
     }
 
     try {
-        const messages = await getConversationMessages(accessToken, conversationId, pageId, pageAccessToken);
+        // Use Facebook conversation ID for API call
+        const messages = await getAllConversationMessages(accessToken, fbConvId, pageId, pageAccessToken, 500);
+        
+        // Save messages to DB for future cache
+        if (messages.length > 0) {
+            const conversation = await prisma.conversation.findUnique({ where: { id: conversationId } });
+            if (conversation) {
+                await Promise.all(messages.map(async (msg: any) => {
+                    await prisma.message.upsert({
+                        where: { id: msg.id },
+                        create: {
+                            id: msg.id,
+                            conversationId,
+                            from: msg.from?.id || 'unknown',
+                            text: msg.message,
+                            attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
+                            stickerUrl: msg.sticker?.url,
+                            isFromPage: msg.from?.id === pageId,
+                            createdTime: new Date(msg.created_time)
+                        },
+                        update: {}
+                    });
+                }));
+            }
+        }
+        
         return JSON.parse(JSON.stringify(messages));
     } catch (error: any) {
         console.error('Failed to fetch messages:', error);
-        return [];
+        return formattedDbMessages;
+    }
+}
+
+// Background sync helper
+async function syncMessagesFromFacebook(conversationId: string, pageId: string, userId: string, pageAccessToken?: string, facebookConversationId?: string) {
+    const user = await prisma.user.findUnique({ 
+        where: { id: userId },
+        select: { facebookAdToken: true }
+    });
+
+    let accessToken = user?.facebookAdToken;
+    
+    if (!accessToken) {
+        const account = await prisma.account.findFirst({
+            where: { userId, provider: "facebook" },
+            select: { access_token: true }
+        });
+        accessToken = account?.access_token || null;
+    }
+
+    if (!accessToken) return;
+
+    // Use Facebook conversation ID for API call
+    const fbConvId = facebookConversationId || conversationId;
+
+    try {
+        const messages = await getAllConversationMessages(accessToken, fbConvId, pageId, pageAccessToken, 500);
+        
+        if (messages.length > 0) {
+            await Promise.all(messages.map(async (msg: any) => {
+                await prisma.message.upsert({
+                    where: { id: msg.id },
+                    create: {
+                        id: msg.id,
+                        conversationId,  // Use DB conversation ID for storage
+                        from: msg.from?.id || 'unknown',
+                        text: msg.message,
+                        attachments: msg.attachments ? JSON.stringify(msg.attachments) : null,
+                        stickerUrl: msg.sticker?.url,
+                        isFromPage: msg.from?.id === pageId,
+                        createdTime: new Date(msg.created_time)
+                    },
+                    update: {}
+                });
+            }));
+        }
+    } catch (e) {
+        console.error('[syncMessagesFromFacebook] Error:', e);
     }
 }
 
@@ -327,6 +443,29 @@ export async function sendReply(pageId: string, recipientId: string, messageText
 
     try {
         const result = await sendMessage(accessToken, pageId, recipientId, messageText);
+        
+        // Update conversation updated_time and save message to DB
+        const now = new Date();
+        await prisma.conversation.update({
+            where: { id: conversationId },
+            data: { 
+                updatedTime: now,
+                snippet: messageText.substring(0, 100)
+            }
+        });
+        
+        // Save sent message to DB
+        await prisma.message.create({
+            data: {
+                id: result.message_id || `sent_${Date.now()}`,
+                conversationId,
+                from: pageId,
+                text: messageText,
+                isFromPage: true,
+                createdTime: now
+            }
+        });
+        
         return { success: true, data: result };
     } catch (error: any) {
         console.error('Failed to send message:', error);
@@ -341,9 +480,53 @@ export async function markConversationRead(conversationId: string) {
     }
 
     const userId = (session.user as any).id;
+    const userEmail = session.user.email || '';
+    const now = new Date();
+    
+    // Get Facebook name from user record
+    const user = await prisma.user.findUnique({
+        where: { id: userId },
+        select: { facebookName: true, name: true }
+    });
+    const userName = user?.facebookName || user?.name || session.user.email || 'Unknown';
     
     try {
-        await markConversationAsViewed(conversationId, userId);
+        // Directly set unreadCount to 0 and track who viewed
+        const conversation = await prisma.conversation.findUnique({ where: { id: conversationId } });
+        if (conversation) {
+            // Parse existing viewers
+            let viewedBy: Array<{id: string, name: string, email: string, viewedAt: string}> = [];
+            try {
+                viewedBy = conversation.viewedBy ? JSON.parse(conversation.viewedBy) : [];
+            } catch (e) {
+                viewedBy = [];
+            }
+            
+            // Update or add current user's view record
+            const existingIndex = viewedBy.findIndex(v => v.id === userId);
+            const viewRecord = {
+                id: userId,
+                name: userName,
+                email: userEmail,
+                viewedAt: now.toISOString()
+            };
+            
+            if (existingIndex >= 0) {
+                viewedBy[existingIndex] = viewRecord;
+            } else {
+                viewedBy.push(viewRecord);
+            }
+            
+            await prisma.conversation.update({
+                where: { id: conversationId },
+                data: { 
+                    unreadCount: 0,
+                    viewedBy: JSON.stringify(viewedBy),
+                    lastViewedBy: userName,
+                    lastViewedAt: now
+                }
+            });
+        }
         return { success: true };
     } catch (error) {
         console.error('Failed to mark conversation as read:', error);
@@ -373,20 +556,34 @@ export async function fetchConversationsFromDB(pageIds: string[]) {
             new Date(b.updatedTime || 0).getTime() - new Date(a.updatedTime || 0).getTime()
         );
 
-        return allConversations.map((c: any) => ({
-            id: c.id,
-            pageId: c.pageId,
-            snippet: c.snippet,
-            updated_time: c.updatedTime?.toISOString(),
-            unread_count: c.unreadCount,
-            facebookLink: c.facebookLink,
-            participants: {
-                data: [{
-                    id: c.participantId,
-                    name: c.participantName || 'Facebook User'
-                }]
+        return allConversations.map((c: any) => {
+            // Parse viewedBy
+            let viewedByList: Array<{id: string, name: string, email: string, viewedAt: string}> = [];
+            try {
+                viewedByList = c.viewedBy ? JSON.parse(c.viewedBy) : [];
+            } catch (e) {
+                viewedByList = [];
             }
-        }));
+            
+            return {
+                id: c.id,
+                facebookConversationId: c.facebookConversationId,
+                pageId: c.pageId,
+                snippet: c.snippet,
+                updated_time: c.updatedTime?.toISOString(),
+                unread_count: c.unreadCount,
+                facebookLink: c.facebookLink,
+                participants: {
+                    data: [{
+                        id: c.participantId,
+                        name: c.participantName || 'Facebook User'
+                    }]
+                },
+                viewedBy: viewedByList,
+                lastViewedBy: c.lastViewedBy,
+                lastViewedAt: c.lastViewedAt?.toISOString()
+            };
+        });
     } catch (error) {
         console.error('Failed to fetch conversations from DB:', error);
         return [];

@@ -42,6 +42,10 @@ interface UserSettings {
     weeklyReports: boolean
     budgetAlerts: boolean
     twoFactorEnabled: boolean
+    // AdBox Notification Settings
+    adboxSoundEnabled: boolean
+    adboxBrowserNotification: boolean
+    adboxInAppNotification: boolean
 }
 
 interface FacebookAccount {
@@ -56,7 +60,7 @@ export default function SettingsPage() {
     const searchParams = useSearchParams()
     const activeSection = searchParams.get("tab") || "account"
     const { data: session } = useSession()
-    const { language, setLanguage } = useLanguage()
+    const { language, setLanguage, timezone, setTimezone } = useLanguage()
     const { theme, setTheme, primaryColor, setPrimaryColor, compactMode, setCompactMode, showAnimations, setShowAnimations } = useTheme()
     
     const [settings, setSettings] = useState<UserSettings | null>(null)
@@ -77,6 +81,7 @@ export default function SettingsPage() {
                     setSettings(data)
                     // Sync with context
                     if (data.language) setLanguage(data.language as 'en' | 'th')
+                    if (data.timezone) setTimezone(data.timezone)
                     if (data.theme) setTheme(data.theme as any)
                     if (data.primaryColor) setPrimaryColor(data.primaryColor as any)
                     if (data.compactMode !== undefined) setCompactMode(data.compactMode)
@@ -313,6 +318,99 @@ export default function SettingsPage() {
                                     />
                                 </div>
                             </div>
+
+                            {/* AdBox Notifications */}
+                            <div className="border-t pt-6 mt-6">
+                                <h4 className="font-semibold mb-4">AdBox Chat Notifications</h4>
+                                <div className="space-y-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <Label className="font-medium">Browser Notifications</Label>
+                                            <p className="text-sm text-muted-foreground">Show Windows/Browser notification popup when new message arrives</p>
+                                        </div>
+                                        <Switch 
+                                            checked={settings?.adboxBrowserNotification ?? true}
+                                            onCheckedChange={(v) => {
+                                                if (v && typeof window !== 'undefined' && 'Notification' in window) {
+                                                    Notification.requestPermission().then(permission => {
+                                                        if (permission === 'granted') {
+                                                            handleSettingChange('adboxBrowserNotification', true)
+                                                            toast.success('Browser notifications enabled!')
+                                                        } else {
+                                                            toast.error('Please allow notifications in your browser settings')
+                                                        }
+                                                    })
+                                                } else {
+                                                    handleSettingChange('adboxBrowserNotification', v)
+                                                }
+                                            }}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <Label className="font-medium">Sound Notifications</Label>
+                                            <p className="text-sm text-muted-foreground">Play sound when new message arrives</p>
+                                        </div>
+                                        <Switch 
+                                            checked={settings?.adboxSoundEnabled ?? true}
+                                            onCheckedChange={(v) => handleSettingChange('adboxSoundEnabled', v)}
+                                        />
+                                    </div>
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <Label className="font-medium">In-App Toast Notifications</Label>
+                                            <p className="text-sm text-muted-foreground">Show toast popup in the app (top-right corner)</p>
+                                        </div>
+                                        <Switch 
+                                            checked={settings?.adboxInAppNotification ?? true}
+                                            onCheckedChange={(v) => handleSettingChange('adboxInAppNotification', v)}
+                                        />
+                                    </div>
+                                    <div className="pt-2">
+                                        <Button
+                                            variant="outline"
+                                            size="sm"
+                                            onClick={() => {
+                                                // Test sound
+                                                try {
+                                                    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+                                                    const osc1 = ctx.createOscillator()
+                                                    const gain1 = ctx.createGain()
+                                                    osc1.connect(gain1)
+                                                    gain1.connect(ctx.destination)
+                                                    osc1.frequency.value = 830
+                                                    osc1.type = 'sine'
+                                                    gain1.gain.setValueAtTime(0.3, ctx.currentTime)
+                                                    gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3)
+                                                    osc1.start(ctx.currentTime)
+                                                    osc1.stop(ctx.currentTime + 0.3)
+                                                    
+                                                    const osc2 = ctx.createOscillator()
+                                                    const gain2 = ctx.createGain()
+                                                    osc2.connect(gain2)
+                                                    gain2.connect(ctx.destination)
+                                                    osc2.frequency.value = 622
+                                                    osc2.type = 'sine'
+                                                    gain2.gain.setValueAtTime(0, ctx.currentTime)
+                                                    gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.15)
+                                                    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
+                                                    osc2.start(ctx.currentTime + 0.15)
+                                                    osc2.stop(ctx.currentTime + 0.5)
+                                                    
+                                                    toast.success('🔔 Test notification!', {
+                                                        description: 'This is how notifications will appear',
+                                                        position: 'top-right'
+                                                    })
+                                                } catch (e) {
+                                                    toast.error('Audio not available')
+                                                }
+                                            }}
+                                        >
+                                            🔔 Test Notification
+                                        </Button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     )}
 
@@ -384,15 +482,18 @@ export default function SettingsPage() {
                                 <div className="space-y-2">
                                     <Label className="font-medium">Timezone</Label>
                                     <Select 
-                                        value={settings?.timezone || "asia-bangkok"}
+                                        value={settings?.timezone || "auto"}
                                         onValueChange={(value) => handleSettingChange('timezone', value)}
                                     >
                                         <SelectTrigger className="w-[280px]">
                                             <SelectValue placeholder="Select timezone" />
                                         </SelectTrigger>
                                         <SelectContent>
+                                            <SelectItem value="auto">🌐 Auto (ตามเครื่อง)</SelectItem>
                                             <SelectItem value="asia-bangkok">Asia/Bangkok (GMT+7)</SelectItem>
                                             <SelectItem value="asia-singapore">Asia/Singapore (GMT+8)</SelectItem>
+                                            <SelectItem value="asia-tokyo">Asia/Tokyo (GMT+9)</SelectItem>
+                                            <SelectItem value="europe-london">Europe/London (GMT+0)</SelectItem>
                                             <SelectItem value="utc">UTC (GMT+0)</SelectItem>
                                             <SelectItem value="america-newyork">America/New York (GMT-5)</SelectItem>
                                         </SelectContent>

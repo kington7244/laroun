@@ -557,23 +557,78 @@ export async function getConversationMessages(
     userAccessToken: string, 
     conversationId: string, 
     pageId: string, 
-    pageAccessToken?: string
+    pageAccessToken?: string,
+    limit: number = 100,
+    after?: string
 ) {
     const token = pageAccessToken || userAccessToken
     
-    const response = await fetch(
-        `https://graph.facebook.com/v21.0/${conversationId}/messages?` +
+    let url = `https://graph.facebook.com/v21.0/${conversationId}/messages?` +
         `fields=id,message,from,created_time,attachments,sticker&` +
-        `limit=50&access_token=${token}`
-    )
+        `limit=${limit}&access_token=${token}`
+    
+    if (after) {
+        url += `&after=${after}`
+    }
+    
+    const response = await fetch(url)
     const data = await response.json()
     
     if (data.error) {
         console.error(`Error fetching messages for conversation ${conversationId}:`, data.error)
-        return []
+        return { messages: [], paging: null }
     }
     
-    return data.data || []
+    return {
+        messages: data.data || [],
+        paging: data.paging || null
+    }
+}
+
+// Fetch all messages from a conversation (with pagination)
+export async function getAllConversationMessages(
+    userAccessToken: string, 
+    conversationId: string, 
+    pageId: string, 
+    pageAccessToken?: string,
+    maxMessages: number = 500
+) {
+    const allMessages: Array<{
+        id: string
+        message?: string
+        from: { id: string; name?: string; email?: string }
+        created_time: string
+        attachments?: { data: Array<{ type: string; image_data?: { url: string }; video_data?: { url: string }; file_url?: string; name?: string }> }
+        sticker?: string
+    }> = []
+    let after: string | undefined = undefined
+    let hasMore = true
+    
+    while (hasMore && allMessages.length < maxMessages) {
+        const result = await getConversationMessages(
+            userAccessToken,
+            conversationId,
+            pageId,
+            pageAccessToken,
+            100,
+            after
+        )
+        
+        if (result.messages.length === 0) {
+            hasMore = false
+            break
+        }
+        
+        allMessages.push(...result.messages)
+        
+        if (result.paging?.cursors?.after) {
+            after = result.paging.cursors.after
+        } else {
+            hasMore = false
+        }
+    }
+    
+    return allMessages
 }
 
 export async function sendMessage(

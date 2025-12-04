@@ -52,6 +52,7 @@ export async function upsertConversation(data: {
   adId?: string
   facebookLink?: string
   viewedBy?: string
+  facebookConversationId?: string
 }) {
   return prisma.conversation.upsert({
     where: { pageId_participantId: { pageId: data.pageId, participantId: data.participantId } },
@@ -63,7 +64,8 @@ export async function upsertConversation(data: {
       unreadCount: data.unreadCount,
       adId: data.adId,
       facebookLink: data.facebookLink,
-      viewedBy: data.viewedBy
+      viewedBy: data.viewedBy,
+      facebookConversationId: data.facebookConversationId
     }
   })
 }
@@ -77,6 +79,7 @@ export async function bulkUpsertConversations(conversations: Array<{
   unreadCount?: number
   adId?: string
   facebookLink?: string
+  facebookConversationId?: string
 }>) {
   const results = await Promise.all(
     conversations.map(conv => upsertConversation(conv))

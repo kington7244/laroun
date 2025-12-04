@@ -31,10 +31,11 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { useLanguage } from '@/contexts/LanguageContext';
+import { toast } from 'sonner';
 
 export default function AdBoxPage() {
     const { data: session } = useSession();
-    const { t } = useLanguage();
+    const { t, formatMessageTime, formatConversationTime } = useLanguage();
 
     const [pages, setPages] = useState<any[]>([]);
     const [selectedPageIds, setSelectedPageIds] = useState<string[]>(() => {
@@ -54,9 +55,13 @@ export default function AdBoxPage() {
     // Message State
     const [messages, setMessages] = useState<any[]>([]);
     const [loadingMessages, setLoadingMessages] = useState(false);
+    const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
+    const [hasMoreMessages, setHasMoreMessages] = useState(true);
+    const [allMessagesCache, setAllMessagesCache] = useState<any[]>([]);
     const [replyText, setReplyText] = useState('');
     const [sending, setSending] = useState(false);
     const scrollRef = useRef<HTMLDivElement>(null);
+    const chatContainerRef = useRef<HTMLDivElement>(null);
 
     // Filter State
     const [filterStatus, setFilterStatus] = useState<'all' | 'unread' | 'read'>('all');
@@ -64,6 +69,167 @@ export default function AdBoxPage() {
     
     // Info Panel State - Conversation Info (toggle with user icon)
     const [showConversationInfo, setShowConversationInfo] = useState(false);
+
+    // Notification settings
+    const [soundEnabled, setSoundEnabled] = useState(true);
+    const [browserNotificationEnabled, setBrowserNotificationEnabled] = useState(true);
+    const [inAppNotificationEnabled, setInAppNotificationEnabled] = useState(true);
+    const lastConversationCountRef = useRef(0);
+    const lastUnreadCountRef = useRef(0);
+    const audioContextRef = useRef<AudioContext | null>(null);
+
+    // Load notification settings from API
+    useEffect(() => {
+        const loadSettings = async () => {
+            try {
+                const res = await fetch('/api/settings');
+                if (res.ok) {
+                    const data = await res.json();
+                    setSoundEnabled(data.adboxSoundEnabled ?? true);
+                    setBrowserNotificationEnabled(data.adboxBrowserNotification ?? true);
+                    setInAppNotificationEnabled(data.adboxInAppNotification ?? true);
+                }
+            } catch (e) {
+                console.error('Failed to load notification settings:', e);
+            }
+        };
+        loadSettings();
+    }, []);
+
+    // Play notification sound (Ding-Dong)
+    const playNotificationSound = () => {
+        if (!soundEnabled) return;
+        try {
+            if (!audioContextRef.current) {
+                audioContextRef.current = new (window.AudioContext || (window as any).webkitAudioContext)();
+            }
+            const ctx = audioContextRef.current;
+            const now = ctx.currentTime;
+            
+            // Ding (high note)
+            const osc1 = ctx.createOscillator();
+            const gain1 = ctx.createGain();
+            osc1.connect(gain1);
+            gain1.connect(ctx.destination);
+            osc1.frequency.value = 830;
+            osc1.type = 'sine';
+            gain1.gain.setValueAtTime(0.3, now);
+            gain1.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+            osc1.start(now);
+            osc1.stop(now + 0.3);
+            
+            // Dong (lower note)
+            const osc2 = ctx.createOscillator();
+            const gain2 = ctx.createGain();
+            osc2.connect(gain2);
+            gain2.connect(ctx.destination);
+            osc2.frequency.value = 622;
+            osc2.type = 'sine';
+            gain2.gain.setValueAtTime(0.3, now + 0.15);
+            gain2.gain.exponentialRampToValueAtTime(0.01, now + 0.5);
+            osc2.start(now + 0.15);
+            osc2.stop(now + 0.5);
+        } catch (e) {
+            console.error('Error playing sound:', e);
+        }
+    };
+
+    // Polling for real-time updates
+    useEffect(() => {
+        if (selectedPageIds.length === 0 || pages.length === 0) return;
+
+        const pollInterval = setInterval(async () => {
+            try {
+                const cachedConvs = await fetchConversationsFromDB(selectedPageIds);
+                
+                // Check for new messages
+                const currentUnreadCount = cachedConvs.reduce((sum: number, c: any) => sum + (c.unread_count || 0), 0);
+                const hasNewMessages = currentUnreadCount > lastUnreadCountRef.current || 
+                    cachedConvs.length > lastConversationCountRef.current;
+                
+                if (hasNewMessages && lastUnreadCountRef.current > 0) {
+                    // Find the new/updated conversation
+                    const newConv = cachedConvs.find((c: any) => c.unread_count > 0);
+                    const participantName = newConv?.participants?.data?.[0]?.name || 'New message';
+                    const messageSnippet = newConv?.snippet || '';
+                    
+                    playNotificationSound();
+                    
+                    // Browser notification
+                    if (browserNotificationEnabled && 'Notification' in window && Notification.permission === 'granted') {
+                        new Notification(`💬 ${participantName}`, {
+                            body: messageSnippet,
+                            icon: '/logo.png'
+                        });
+                    }
+                    
+                    // In-app toast
+                    if (inAppNotificationEnabled && newConv) {
+                        toast.message(`💬 ${participantName}`, {
+                            description: messageSnippet,
+                            position: 'top-right',
+                            duration: 5000,
+                        });
+                    }
+                }
+
+                lastConversationCountRef.current = cachedConvs.length;
+                lastUnreadCountRef.current = currentUnreadCount;
+                
+                // Update conversations list
+                if (cachedConvs.length > 0) {
+                    setConversations(cachedConvs);
+                }
+
+                // Refresh current conversation messages if selected
+                if (selectedConversation) {
+                    const page = pages.find(p => p.id === selectedConversation.pageId);
+                    const freshMsgs = await fetchMessages(selectedConversation.id, selectedConversation.pageId, page?.access_token, selectedConversation.facebookConversationId);
+                    
+                    // Sort messages oldest first
+                    const sortedMsgs = freshMsgs.sort((a: any, b: any) => 
+                        new Date(a.created_time).getTime() - new Date(b.created_time).getTime()
+                    );
+                    
+                    // Merge new messages instead of replacing
+                    setMessages(prev => {
+                        if (sortedMsgs.length === 0) return prev;
+                        
+                        const existingIds = new Set(prev.map((m: any) => m.id));
+                        const newMsgs = sortedMsgs.filter((m: any) => !existingIds.has(m.id) && !m.id.startsWith('temp_'));
+                        
+                        // Replace temp messages with real ones
+                        const updatedPrev = prev.filter((m: any) => {
+                            if (!m.id.startsWith('temp_')) return true;
+                            return !sortedMsgs.some((sm: any) => sm.message === m.message);
+                        });
+                        
+                        if (newMsgs.length > 0) {
+                            const merged = [...updatedPrev, ...newMsgs].sort((a: any, b: any) => 
+                                new Date(a.created_time).getTime() - new Date(b.created_time).getTime()
+                            );
+                            setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+                            return merged;
+                        }
+                        return updatedPrev;
+                    });
+                }
+            } catch (error) {
+                console.error('Polling error:', error);
+            }
+        }, 5000);
+
+        return () => clearInterval(pollInterval);
+    }, [selectedPageIds, pages, selectedConversation, soundEnabled, browserNotificationEnabled, inAppNotificationEnabled]);
+
+    // Request notification permission
+    useEffect(() => {
+        if (typeof window !== 'undefined' && 'Notification' in window) {
+            if (Notification.permission === 'default' && browserNotificationEnabled) {
+                Notification.requestPermission();
+            }
+        }
+    }, [browserNotificationEnabled]);
 
     // Load pages on mount
     useEffect(() => {
@@ -131,9 +297,22 @@ export default function AdBoxPage() {
     const loadMessages = async (conv: any) => {
         try {
             setLoadingMessages(true);
+            setHasMoreMessages(true);
             const page = pages.find(p => p.id === conv.pageId);
-            const msgs = await fetchMessages(conv.id, conv.pageId, page?.access_token);
-            setMessages(msgs.reverse()); // Oldest first
+            const allMsgs = await fetchMessages(conv.id, conv.pageId, page?.access_token, conv.facebookConversationId);
+            
+            // Sort messages oldest first
+            const sortedMsgs = allMsgs.sort((a: any, b: any) => 
+                new Date(a.created_time).getTime() - new Date(b.created_time).getTime()
+            );
+            
+            // Cache all messages
+            setAllMessagesCache(sortedMsgs);
+            
+            // Show only last 50 messages initially
+            const recentMsgs = sortedMsgs.slice(-50);
+            setMessages(recentMsgs);
+            setHasMoreMessages(sortedMsgs.length > 50);
             
             // Mark as read
             await markConversationRead(conv.id);
@@ -146,10 +325,54 @@ export default function AdBoxPage() {
             console.error('Error loading messages:', error);
         } finally {
             setLoadingMessages(false);
-            // Scroll to bottom
+            // Scroll to bottom immediately
             setTimeout(() => {
-                scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-            }, 100);
+                scrollRef.current?.scrollIntoView({ behavior: 'auto' });
+            }, 50);
+        }
+    };
+
+    // Load older messages when scrolling to top
+    const loadOlderMessages = () => {
+        if (loadingOlderMessages || !hasMoreMessages || allMessagesCache.length === 0) return;
+        
+        setLoadingOlderMessages(true);
+        
+        // Get current scroll position
+        const container = chatContainerRef.current;
+        const oldScrollHeight = container?.scrollHeight || 0;
+        
+        // Find current oldest displayed message
+        const currentOldestId = messages[0]?.id;
+        const currentOldestIndex = allMessagesCache.findIndex((m: any) => m.id === currentOldestId);
+        
+        if (currentOldestIndex > 0) {
+            // Get 30 more older messages
+            const startIndex = Math.max(0, currentOldestIndex - 30);
+            const olderMsgs = allMessagesCache.slice(startIndex, currentOldestIndex);
+            
+            setMessages(prev => [...olderMsgs, ...prev]);
+            setHasMoreMessages(startIndex > 0);
+            
+            // Restore scroll position after render
+            setTimeout(() => {
+                if (container) {
+                    const newScrollHeight = container.scrollHeight;
+                    container.scrollTop = newScrollHeight - oldScrollHeight;
+                }
+                setLoadingOlderMessages(false);
+            }, 50);
+        } else {
+            setHasMoreMessages(false);
+            setLoadingOlderMessages(false);
+        }
+    };
+
+    // Handle scroll to detect when user scrolls near top
+    const handleChatScroll = (e: React.UIEvent<HTMLDivElement>) => {
+        const target = e.target as HTMLDivElement;
+        if (target.scrollTop < 100 && hasMoreMessages && !loadingOlderMessages) {
+            loadOlderMessages();
         }
     };
 
@@ -159,32 +382,46 @@ export default function AdBoxPage() {
         const participantId = selectedConversation.participants?.data?.[0]?.id;
         if (!participantId) return;
 
+        const messageToSend = replyText;
+        const now = new Date().toISOString();
+        const tempId = `temp_${Date.now()}`;
+
         try {
             setSending(true);
+            setReplyText(''); // Clear immediately for better UX
+            
+            // Optimistic update - add message immediately
+            setMessages(prev => [...prev, {
+                id: tempId,
+                message: messageToSend,
+                from: { id: selectedConversation.pageId, name: 'Me' },
+                created_time: now,
+                isFromPage: true
+            }]);
+            
+            // Scroll to bottom immediately
+            setTimeout(() => scrollRef.current?.scrollIntoView({ behavior: 'smooth' }), 50);
+            
             const result = await sendReply(
                 selectedConversation.pageId,
                 participantId,
-                replyText,
+                messageToSend,
                 selectedConversation.id
             );
 
             if (result.success) {
-                // Add message to local state
-                setMessages(prev => [...prev, {
-                    id: Date.now().toString(),
-                    message: replyText,
-                    from: { id: selectedConversation.pageId, name: 'Me' },
-                    created_time: new Date().toISOString()
-                }]);
-                setReplyText('');
-                
-                // Scroll to bottom
-                setTimeout(() => {
-                    scrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-                }, 100);
+                // Update conversation's updated_time
+                setConversations(prev => prev.map(c => 
+                    c.id === selectedConversation.id 
+                        ? { ...c, updated_time: now, snippet: messageToSend.substring(0, 50) } 
+                        : c
+                ));
             }
         } catch (error) {
             console.error('Error sending message:', error);
+            // Remove optimistic message on error
+            setMessages(prev => prev.filter(m => m.id !== tempId));
+            setReplyText(messageToSend); // Restore the message
         } finally {
             setSending(false);
         }
@@ -212,19 +449,6 @@ export default function AdBoxPage() {
         
         return true;
     });
-
-    const formatTime = (dateString: string) => {
-        const date = new Date(dateString);
-        const now = new Date();
-        const diff = now.getTime() - date.getTime();
-        const hours = Math.floor(diff / (1000 * 60 * 60));
-        const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-
-        if (hours < 1) return 'Just now';
-        if (hours < 24) return `${hours}h`;
-        if (days < 7) return `${days}d`;
-        return date.toLocaleDateString();
-    };
 
     const getPageName = (pageId: string) => {
         const page = pages.find(p => p.id === pageId);
@@ -355,7 +579,7 @@ export default function AdBoxPage() {
                                                             {participant?.name || 'Facebook User'}
                                                         </span>
                                                         <span className="text-xs text-muted-foreground shrink-0">
-                                                            {formatTime(conv.updated_time)}
+                                                            {formatConversationTime(conv.updated_time)}
                                                         </span>
                                                     </div>
                                                     <p className={`text-xs truncate ${
@@ -369,9 +593,13 @@ export default function AdBoxPage() {
                                                         <span className="text-xs text-muted-foreground truncate flex-1">
                                                             {getPageName(conv.pageId)}
                                                         </span>
-                                                        {conv.unread_count > 0 && (
+                                                        {conv.unread_count > 0 ? (
                                                             <span className="bg-primary text-primary-foreground text-xs px-1.5 py-0.5 rounded-full shrink-0">
                                                                 {conv.unread_count}
+                                                            </span>
+                                                        ) : conv.lastViewedBy && (
+                                                            <span className="text-xs text-muted-foreground shrink-0 flex items-center gap-1" title={`อ่านโดย ${conv.lastViewedBy}`}>
+                                                                👁 {conv.lastViewedBy.split(' ')[0]}
                                                             </span>
                                                         )}
                                                     </div>
@@ -433,42 +661,153 @@ export default function AdBoxPage() {
 
                         {/* Messages */}
                         <div className="flex-1 overflow-hidden min-h-0">
-                            <ScrollArea className="h-full">
-                                <div className="p-4">
-                                    {loadingMessages ? (
-                                        <div className="flex items-center justify-center h-32">
-                                            <Loader2 className="h-6 w-6 animate-spin" />
-                                        </div>
-                                    ) : (
-                                        <div className="space-y-4">
-                                            {messages.map(msg => {
-                                                const isFromPage = msg.from?.id === selectedConversation.pageId;
-                                                
-                                                return (
-                                                    <div
-                                                        key={msg.id}
-                                                        className={`flex ${isFromPage ? 'justify-end' : 'justify-start'}`}
-                                                    >
-                                                        <div className={`max-w-[70%] rounded-2xl px-4 py-2 ${
-                                                            isFromPage 
-                                                                ? 'bg-primary text-primary-foreground' 
-                                                                : 'bg-muted'
-                                                        }`}>
-                                                            <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
-                                                            <p className={`text-xs mt-1 ${
-                                                                isFromPage ? 'text-primary-foreground/70' : 'text-muted-foreground'
-                                                            }`}>
-                                                                {new Date(msg.created_time).toLocaleTimeString()}
-                                                            </p>
+                            <div 
+                                ref={chatContainerRef}
+                                className="h-full overflow-y-auto p-4"
+                                onScroll={handleChatScroll}
+                            >
+                                {loadingMessages ? (
+                                    <div className="flex items-center justify-center h-32">
+                                        <Loader2 className="h-6 w-6 animate-spin" />
+                                    </div>
+                                ) : (
+                                    <div className="space-y-4">
+                                        {/* Load older messages indicator */}
+                                        {loadingOlderMessages && (
+                                            <div className="flex items-center justify-center py-2">
+                                                <Loader2 className="h-4 w-4 animate-spin mr-2" />
+                                                <span className="text-sm text-muted-foreground">กำลังโหลดข้อความเก่า...</span>
+                                            </div>
+                                        )}
+                                        {hasMoreMessages && !loadingOlderMessages && messages.length > 0 && (
+                                            <div className="flex items-center justify-center py-2">
+                                                <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={loadOlderMessages}
+                                                    className="text-xs text-muted-foreground"
+                                                >
+                                                    ⬆️ โหลดข้อความเก่า
+                                                </Button>
+                                            </div>
+                                        )}
+                                        
+                                        {messages.map(msg => {
+                                            const isFromPage = msg.from?.id === selectedConversation.pageId || msg.isFromPage;
+                                            const hasAttachments = msg.attachments?.data?.length > 0 || (Array.isArray(msg.attachments) && msg.attachments.length > 0);
+                                            const hasSticker = msg.sticker?.url || msg.stickerUrl;
+                                            const hasText = msg.message && msg.message.trim();
+                                            const attachments = msg.attachments?.data || msg.attachments || [];
+                                            
+                                            // Get customer info for avatar
+                                            const participant = selectedConversation.participants?.data?.[0];
+                                            const customerName = participant?.name || 'Customer';
+                                            const customerId = participant?.id;
+                                            
+                                            return (
+                                                <div
+                                                    key={msg.id}
+                                                    className={`flex gap-2 ${isFromPage ? 'justify-end' : 'justify-start'}`}
+                                                >
+                                                    {/* Customer Avatar */}
+                                                    {!isFromPage && (
+                                                        <div className="flex-shrink-0">
+                                                            <Avatar className="h-8 w-8">
+                                                                <AvatarImage 
+                                                                    src={`https://graph.facebook.com/${customerId}/picture?type=small`} 
+                                                                    alt={customerName}
+                                                                />
+                                                                <AvatarFallback className="text-xs">
+                                                                    {customerName.charAt(0).toUpperCase()}
+                                                                </AvatarFallback>
+                                                            </Avatar>
                                                         </div>
+                                                    )}
+                                                    
+                                                    <div className="max-w-[70%] space-y-1">
+                                                        {/* Sticker */}
+                                                        {hasSticker && (
+                                                            <div className={`flex ${isFromPage ? 'justify-end' : 'justify-start'}`}>
+                                                                <img 
+                                                                    src={msg.sticker?.url || msg.stickerUrl} 
+                                                                    alt="Sticker" 
+                                                                    className="w-32 h-32 object-contain"
+                                                                />
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {/* Attachments */}
+                                                        {hasAttachments && attachments.map((att: any, idx: number) => {
+                                                            const imageUrl = att.image_data?.url || att.payload?.url || att.url;
+                                                            const type = att.type || att.mime_type || 'file';
+                                                            
+                                                            if (type === 'image' || type?.startsWith('image/') || imageUrl?.match(/\.(jpg|jpeg|png|gif|webp)/i)) {
+                                                                return (
+                                                                    <div key={idx} className={`flex ${isFromPage ? 'justify-end' : 'justify-start'}`}>
+                                                                        <img 
+                                                                            src={imageUrl}
+                                                                            alt="Image"
+                                                                            className="max-w-full rounded-lg max-h-64 object-cover cursor-pointer hover:opacity-90"
+                                                                            onClick={() => window.open(imageUrl, '_blank')}
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            
+                                                            if (type === 'video' || type?.startsWith('video/')) {
+                                                                return (
+                                                                    <div key={idx} className={`flex ${isFromPage ? 'justify-end' : 'justify-start'}`}>
+                                                                        <video 
+                                                                            src={imageUrl}
+                                                                            controls
+                                                                            className="max-w-full rounded-lg max-h-64"
+                                                                        />
+                                                                    </div>
+                                                                );
+                                                            }
+                                                            
+                                                            return (
+                                                                <div key={idx} className={`flex ${isFromPage ? 'justify-end' : 'justify-start'}`}>
+                                                                    <a 
+                                                                        href={imageUrl}
+                                                                        target="_blank"
+                                                                        rel="noopener noreferrer"
+                                                                        className={`flex items-center gap-2 px-3 py-2 rounded-lg ${
+                                                                            isFromPage ? 'bg-primary text-primary-foreground' : 'bg-muted'
+                                                                        }`}
+                                                                    >
+                                                                        <FileText className="h-4 w-4" />
+                                                                        <span className="text-sm">{att.name || 'File'}</span>
+                                                                    </a>
+                                                                </div>
+                                                            );
+                                                        })}
+                                                        
+                                                        {/* Text Message */}
+                                                        {hasText && (
+                                                            <div className={`flex ${isFromPage ? 'justify-end' : 'justify-start'}`}>
+                                                                <div className={`rounded-2xl px-4 py-2 ${
+                                                                    isFromPage 
+                                                                        ? 'bg-primary text-primary-foreground' 
+                                                                        : 'bg-muted'
+                                                                }`}>
+                                                                    <p className="text-sm whitespace-pre-wrap">{msg.message}</p>
+                                                                </div>
+                                                            </div>
+                                                        )}
+                                                        
+                                                        {/* Time */}
+                                                        <p className={`text-xs ${isFromPage ? 'text-right' : 'text-left'} text-muted-foreground`}>
+                                                            {formatMessageTime(msg.created_time)}
+                                                        </p>
                                                     </div>
-                                                );
-                                            })}
-                                            <div ref={scrollRef} />
-                                        </div>
-                                    )}
-                                </div>
-                            </ScrollArea>
+                                                </div>
+                                            );
+                                        })}
+                                        <div ref={scrollRef} />
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         {/* Reply Input */}
@@ -603,6 +942,38 @@ export default function AdBoxPage() {
                                         <span className="text-sm">รายงานว่าเป็นสแปม</span>
                                     </button>
                                 </div>
+
+                                {/* Viewed By Section */}
+                                {selectedConversation.viewedBy && selectedConversation.viewedBy.length > 0 && (
+                                    <>
+                                        <Separator />
+                                        <div className="p-4">
+                                            <div className="flex items-center gap-2 mb-3">
+                                                <User className="h-4 w-4 text-muted-foreground" />
+                                                <span className="font-medium text-sm">ผู้ดูแลที่อ่านแชทนี้</span>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {selectedConversation.viewedBy.map((viewer: any, idx: number) => (
+                                                    <div key={idx} className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
+                                                        <Avatar className="h-7 w-7">
+                                                            <AvatarFallback className="text-xs">
+                                                                {(viewer.name || viewer.email || 'U').charAt(0).toUpperCase()}
+                                                            </AvatarFallback>
+                                                        </Avatar>
+                                                        <div className="flex-1 min-w-0">
+                                                            <p className="text-sm font-medium truncate">
+                                                                {viewer.name || viewer.email || 'Unknown'}
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {viewer.viewedAt ? formatConversationTime(viewer.viewedAt) : '-'}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                             </>
                         ) : (
                             <>

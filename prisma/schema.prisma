@@ -15,10 +15,11 @@ model User {
   password       String?
   image          String?
   facebookAdToken String?  @db.Text
+  facebookName   String?   // Name from connected Facebook account
   
   // User Settings
   language       String    @default("en")
-  timezone       String    @default("asia-bangkok")
+  timezone       String    @default("auto")
   currency       String    @default("usd")
   theme          String    @default("light")
   primaryColor   String    @default("sky")
@@ -29,6 +30,11 @@ model User {
   weeklyReports     Boolean @default(false)
   budgetAlerts      Boolean @default(true)
   twoFactorEnabled  Boolean @default(false)
+  
+  // AdBox Notification Settings
+  adboxSoundEnabled       Boolean @default(true)
+  adboxBrowserNotification Boolean @default(true)
+  adboxInAppNotification  Boolean @default(true)
   
   createdAt      DateTime  @default(now())
   updatedAt      DateTime  @updatedAt
@@ -92,24 +98,28 @@ model PasswordResetToken {
 // ===== AdBox Models =====
 
 model Conversation {
-  id              String    @id @default(cuid())
-  pageId          String
-  participantId   String
-  participantName String?
-  snippet         String?   @db.Text
-  updatedTime     DateTime?
-  unreadCount     Int       @default(0)
-  adId            String?
-  facebookLink    String?
-  viewedBy        String?   @db.Text  // JSON array of user IDs
-  createdAt       DateTime  @default(now())
-  updatedAt       DateTime  @updatedAt
-  messages        Message[]
+  id                     String    @id @default(cuid())
+  facebookConversationId String?   // Facebook conversation ID (t_xxxx)
+  pageId                 String
+  participantId          String
+  participantName        String?
+  snippet                String?   @db.Text
+  updatedTime            DateTime?
+  unreadCount            Int       @default(0)
+  adId                   String?
+  facebookLink           String?
+  viewedBy               String?   @db.Text  // JSON: [{id, name, email, viewedAt}]
+  lastViewedBy           String?   // Last viewer's name
+  lastViewedAt           DateTime? // Last viewed timestamp
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  messages               Message[]
 
   @@unique([pageId, participantId])
   @@index([pageId])
   @@index([participantId])
   @@index([adId])
+  @@index([facebookConversationId])
 }
 
 model Message {
