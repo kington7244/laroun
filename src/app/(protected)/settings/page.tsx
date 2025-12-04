@@ -232,7 +232,7 @@ export default function SettingsPage() {
                                 </p>
                             </div>
                             <div className="border-t pt-6">
-                                <ConnectForm isConnected={false} />
+                                <ConnectForm />
                             </div>
                         </div>
                     )}

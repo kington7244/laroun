@@ -4,9 +4,16 @@ import { getServerSession } from "next-auth"
 import { authOptions } from "@/lib/auth"
 import { db } from "@/lib/db"
 
+interface FacebookAccount {
+    isConnected: boolean
+    providerAccountId?: string
+    scope?: string
+    tokenExpires?: Date | null
+}
+
 export default async function SettingsConnectPage() {
     const session = await getServerSession(authOptions)
-    let isConnected = false
+    let facebookAccount: FacebookAccount = { isConnected: false }
 
     if (session?.user?.id) {
         const account = await db.account.findFirst({
@@ -14,8 +21,22 @@ export default async function SettingsConnectPage() {
                 userId: session.user.id,
                 provider: "facebook",
             },
+            select: {
+                providerAccountId: true,
+                scope: true,
+                expires_at: true,
+                access_token: true,
+            }
         })
-        isConnected = !!account
+        
+        if (account) {
+            facebookAccount = {
+                isConnected: true,
+                providerAccountId: account.providerAccountId,
+                scope: account.scope || undefined,
+                tokenExpires: account.expires_at ? new Date(account.expires_at * 1000) : null,
+            }
+        }
     }
 
     return (
@@ -27,7 +48,7 @@ export default async function SettingsConnectPage() {
                 </p>
             </div>
             <Separator />
-            <ConnectForm isConnected={isConnected} />
+            <ConnectForm facebookAccount={facebookAccount} />
         </div>
     )
 }
