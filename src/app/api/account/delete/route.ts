@@ -12,9 +12,16 @@ export async function DELETE(request: NextRequest) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 })
         }
 
+        const userId = session.user.id
+
+        // Delete ActivityLog first (no cascade relation)
+        await db.activityLog.deleteMany({
+            where: { userId }
+        })
+
         // Delete user and all related data (cascades due to onDelete: Cascade)
         await db.user.delete({
-            where: { id: session.user.id }
+            where: { id: userId }
         })
 
         return NextResponse.json({ success: true, message: "Account deleted successfully" })

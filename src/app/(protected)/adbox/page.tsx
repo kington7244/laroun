@@ -38,7 +38,7 @@ import { useLanguage } from '@/contexts/LanguageContext';
 import { toast } from 'sonner';
 
 export default function AdBoxPage() {
-    const { data: session } = useSession();
+    const { data: session, status: sessionStatus } = useSession();
     const { t, formatMessageTime, formatConversationTime } = useLanguage();
 
     const [pages, setPages] = useState<any[]>([]);
@@ -77,7 +77,14 @@ export default function AdBoxPage() {
     // User and Team State
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [teamInfo, setTeamInfo] = useState<any>(null);
-    const [isAdmin, setIsAdmin] = useState(false);
+    // Use session for initial role check (faster than API call)
+    // Roles: host (highest), admin (manage team), staff (assigned chats only)
+    const userRole = session?.user?.role || 'staff';
+    const isHost = userRole === 'host';
+    const isAdmin = userRole === 'admin';
+    const canManageTeam = isHost || isAdmin; // Host and Admin can manage
+    const canSeeAllChats = isHost || isAdmin; // Host and Admin see all chats
+    const sessionUserId = session?.user?.id;
 
     // Notification settings
     const [soundEnabled, setSoundEnabled] = useState(true);
@@ -268,7 +275,6 @@ export default function AdBoxPage() {
             ]);
             setCurrentUser(user);
             setTeamInfo(team);
-            setIsAdmin(user?.role === 'admin');
         } catch (e) {
             console.error('Failed to load user/team:', e);
         }
@@ -523,7 +529,17 @@ export default function AdBoxPage() {
         }
     };
 
+    // Filter conversations - use session data for instant filtering (no waiting for API)
     const filteredConversations = conversations.filter(conv => {
+        // While session is loading, hide all for safety
+        if (sessionStatus === 'loading') return false;
+        
+        // Staff can only see conversations assigned to them
+        // Host and Admin see all conversations
+        if (!canSeeAllChats && sessionUserId) {
+            if (conv.assignedToId !== sessionUserId) return false;
+        }
+        
         // Filter by status
         if (filterStatus === 'unread' && conv.unread_count === 0) return false;
         if (filterStatus === 'read' && conv.unread_count > 0) return false;

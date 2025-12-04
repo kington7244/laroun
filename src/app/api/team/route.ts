@@ -5,6 +5,16 @@ import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 
+// Helper: Check if user can manage team (host or admin)
+function canManageTeam(role: string): boolean {
+    return role === 'host' || role === 'admin';
+}
+
+// Helper: Check if user is host
+function isHost(role: string): boolean {
+    return role === 'host';
+}
+
 // GET - Get user's team and members
 export async function GET(req: NextRequest) {
     try {
@@ -21,11 +31,13 @@ export async function GET(req: NextRequest) {
             select: { id: true, role: true, name: true, email: true, facebookName: true }
         });
 
+        console.log('[API/team] User:', user?.email, 'Role:', user?.role, 'canManage:', user ? canManageTeam(user.role) : false);
+
         if (!user) {
             return NextResponse.json({ error: 'User not found' }, { status: 404 });
         }
 
-        // Get team owned by this user (admin) or team the user is member of
+        // Get team owned by this user (host/admin) or team the user is member of
         let team = await prisma.team.findFirst({
             where: { ownerId: userId },
             include: {
@@ -35,12 +47,15 @@ export async function GET(req: NextRequest) {
                             select: { id: true, name: true, email: true, facebookName: true, role: true }
                         }
                     }
+                },
+                owner: {
+                    select: { id: true, name: true, email: true, role: true }
                 }
             }
         });
 
-        // If user is staff, find the team they belong to
-        if (!team && user.role === 'staff') {
+        // If user is staff or admin without team, find the team they belong to
+        if (!team && (user.role === 'staff' || user.role === 'admin')) {
             const membership = await prisma.teamMember.findFirst({
                 where: { userId },
                 include: {
@@ -52,6 +67,9 @@ export async function GET(req: NextRequest) {
                                         select: { id: true, name: true, email: true, facebookName: true, role: true }
                                     }
                                 }
+                            },
+                            owner: {
+                                select: { id: true, name: true, email: true, role: true }
                             }
                         }
                     }
@@ -63,7 +81,9 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({
             user,
             team,
-            isAdmin: user.role === 'admin'
+            isHost: user.role === 'host',
+            isAdmin: user.role === 'admin',
+            canManage: canManageTeam(user.role)
         });
     } catch (error: any) {
         console.error('Error fetching team:', error);
@@ -81,16 +101,16 @@ export async function POST(req: NextRequest) {
 
         const userId = (session.user as any).id;
         const body = await req.json();
-        const { action, teamName, memberEmail, memberId, autoAssignEnabled } = body;
+        const { action, teamName, memberEmail, memberId, memberRole, autoAssignEnabled } = body;
 
-        // Check if user is admin
+        // Check if user can manage
         const user = await prisma.user.findUnique({
             where: { id: userId },
             select: { role: true }
         });
 
-        if (user?.role !== 'admin') {
-            return NextResponse.json({ error: 'Only admins can manage teams' }, { status: 403 });
+        if (!user || !canManageTeam(user.role)) {
+            return NextResponse.json({ error: 'ไม่มีสิทธิ์จัดการทีม' }, { status: 403 });
         }
 
         if (action === 'createTeam') {
@@ -111,26 +131,42 @@ export async function POST(req: NextRequest) {
                 where: { email: memberEmail }
             });
 
+            // Determine role for new member (default to staff, admin can add admins, only host can add admins)
+            let newMemberRole = memberRole || 'staff';
+            
+            // Only host can create admins
+            if (newMemberRole === 'admin' && user.role !== 'host') {
+                newMemberRole = 'staff';
+            }
+            
+            // Cannot create host
+            if (newMemberRole === 'host') {
+                newMemberRole = 'staff';
+            }
+
             if (!memberUser) {
-                // Create new staff user
+                // Create new user
                 memberUser = await prisma.user.create({
                     data: {
                         email: memberEmail,
                         name: memberEmail.split('@')[0],
-                        role: 'staff'
+                        role: newMemberRole
                     }
                 });
             } else {
-                // Update role to staff if not admin
-                if (memberUser.role !== 'admin') {
-                    await prisma.user.update({
-                        where: { id: memberUser.id },
-                        data: { role: 'staff' }
-                    });
+                // Update role only if current user has permission
+                // Host can change any role, admin cannot change host
+                if (memberUser.role !== 'host') {
+                    if (user.role === 'host' || (user.role === 'admin' && memberUser.role !== 'admin')) {
+                        await prisma.user.update({
+                            where: { id: memberUser.id },
+                            data: { role: newMemberRole }
+                        });
+                    }
                 }
             }
 
-            // Get admin's team
+            // Get user's team
             let team = await prisma.team.findFirst({
                 where: { ownerId: userId }
             });
@@ -166,7 +202,58 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ success: true, member });
         }
 
+        if (action === 'updateMemberRole') {
+            // Get target member
+            const targetUser = await prisma.user.findUnique({
+                where: { id: memberId },
+                select: { role: true }
+            });
+
+            if (!targetUser) {
+                return NextResponse.json({ error: 'Member not found' }, { status: 404 });
+            }
+
+            // Cannot change host role
+            if (targetUser.role === 'host') {
+                return NextResponse.json({ error: 'ไม่สามารถเปลี่ยน role ของ Host ได้' }, { status: 403 });
+            }
+
+            // Only host can set admin role
+            let newRole = memberRole;
+            if (newRole === 'admin' && user.role !== 'host') {
+                return NextResponse.json({ error: 'เฉพาะ Host เท่านั้นที่สามารถตั้ง Admin ได้' }, { status: 403 });
+            }
+
+            // Cannot set host role
+            if (newRole === 'host') {
+                return NextResponse.json({ error: 'ไม่สามารถตั้ง role เป็น Host ได้' }, { status: 403 });
+            }
+
+            await prisma.user.update({
+                where: { id: memberId },
+                data: { role: newRole }
+            });
+
+            return NextResponse.json({ success: true });
+        }
+
         if (action === 'removeMember') {
+            // Get target member
+            const targetUser = await prisma.user.findUnique({
+                where: { id: memberId },
+                select: { role: true }
+            });
+
+            // Cannot remove host
+            if (targetUser?.role === 'host') {
+                return NextResponse.json({ error: 'ไม่สามารถลบ Host ได้' }, { status: 403 });
+            }
+
+            // Admin can only remove staff, host can remove anyone
+            if (user.role === 'admin' && targetUser?.role === 'admin') {
+                return NextResponse.json({ error: 'Admin ไม่สามารถลบ Admin อื่นได้' }, { status: 403 });
+            }
+
             await prisma.teamMember.deleteMany({
                 where: {
                     userId: memberId,

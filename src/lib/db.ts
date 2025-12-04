@@ -11,6 +11,54 @@ if (process.env.NODE_ENV !== "production") globalForPrisma.prisma = prisma
 // Legacy export for compatibility
 export const db = prisma
 
+// ===== Auto-Assign Helper =====
+// Track round-robin index per team (in memory, resets on server restart)
+const teamRoundRobinIndex: Map<string, number> = new Map();
+
+async function autoAssignConversation(conversationId: string) {
+  try {
+    // Find a team with autoAssignEnabled
+    const team = await prisma.team.findFirst({
+      where: { autoAssignEnabled: true },
+      include: {
+        members: {
+          where: { isActive: true },
+          include: { user: true }
+        }
+      }
+    });
+    
+    if (!team || team.members.length === 0) {
+      console.log('[AutoAssign] No team with auto-assign enabled or no members');
+      return; // No team or no members
+    }
+    
+    // Get current round-robin index for this team
+    let currentIndex = teamRoundRobinIndex.get(team.id) ?? 0;
+    
+    // Get the next member to assign (round-robin)
+    const member = team.members[currentIndex % team.members.length];
+    
+    // Update round-robin index
+    teamRoundRobinIndex.set(team.id, currentIndex + 1);
+    
+    const assignedName = member.user.name || member.user.email || 'Unknown';
+    
+    // Assign conversation to member using relation connect
+    await prisma.conversation.update({
+      where: { id: conversationId },
+      data: {
+        assignedTo: { connect: { id: member.userId } },
+        assignedAt: new Date()
+      }
+    });
+    
+    console.log(`[AutoAssign] Assigned conversation ${conversationId} to ${assignedName}`);
+  } catch (error) {
+    console.error('[AutoAssign] Error:', error);
+  }
+}
+
 // ===== User Functions =====
 export async function updateUser(id: string, data: Prisma.UserUpdateInput) {
   return prisma.user.update({ where: { id }, data })
@@ -57,7 +105,7 @@ export async function upsertConversation(data: {
   // First check if conversation exists and was viewed after last update
   const existing = await prisma.conversation.findUnique({
     where: { pageId_participantId: { pageId: data.pageId, participantId: data.participantId } },
-    select: { lastViewedAt: true, updatedTime: true, unreadCount: true }
+    select: { id: true, lastViewedAt: true, updatedTime: true, unreadCount: true, assignedToId: true }
   });
   
   // Determine if we should update unreadCount:
@@ -75,7 +123,10 @@ export async function upsertConversation(data: {
     finalUnreadCount = existing.unreadCount ?? 0;
   }
   
-  return prisma.conversation.upsert({
+  // Check if this is a NEW conversation OR existing but not assigned yet
+  const needsAutoAssign = !existing || !existing.assignedToId;
+  
+  const result = await prisma.conversation.upsert({
     where: { pageId_participantId: { pageId: data.pageId, participantId: data.participantId } },
     create: data,
     update: {
@@ -88,7 +139,14 @@ export async function upsertConversation(data: {
       // Don't override viewedBy - preserve who read it
       facebookConversationId: data.facebookConversationId
     }
-  })
+  });
+  
+  // Auto-assign conversations that don't have an owner yet
+  if (needsAutoAssign) {
+    await autoAssignConversation(result.id);
+  }
+  
+  return result;
 }
 
 export async function bulkUpsertConversations(conversations: Array<{

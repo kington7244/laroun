@@ -252,12 +252,13 @@ export async function fetchConversations(pages: { id: string, access_token?: str
                         facebookLink: conv.facebookLink,
                         facebookConversationId: conv.id
                     });
-                    // Return conv with corrected unread_count from DB
+                    // Return conv with corrected unread_count from DB and assignedToId
                     return {
                         ...conv,
                         unread_count: saved.unreadCount,
                         lastViewedBy: saved.lastViewedBy,
-                        lastViewedAt: saved.lastViewedAt?.toISOString()
+                        lastViewedAt: saved.lastViewedAt?.toISOString(),
+                        assignedToId: saved.assignedToId
                     };
                 } catch (e) {
                     console.error('Failed to save conversation:', e);
@@ -604,6 +605,7 @@ export async function fetchConversationsFromDB(pageIds: string[]) {
                 viewedBy: viewedByList,
                 lastViewedBy: c.lastViewedBy,
                 lastViewedAt: c.lastViewedAt?.toISOString(),
+                assignedToId: c.assignedToId,
                 assignedTo: c.assignedTo ? {
                     id: c.assignedTo.id,
                     name: c.assignedTo.facebookName || c.assignedTo.name || c.assignedTo.email

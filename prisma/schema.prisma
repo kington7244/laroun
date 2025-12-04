@@ -16,7 +16,7 @@ model User {
   image          String?
   facebookAdToken String?  @db.Text
   facebookName   String?   // Name from connected Facebook account
-  role           String    @default("admin") // admin, staff
+  role           String    @default("staff") // host, admin, staff
   
   // User Settings
   language       String    @default("en")
@@ -42,6 +42,7 @@ model User {
   accounts       Account[]
   sessions       Session[]
   adAccounts     AdAccount[]
+  pageSettings   PageSettings[]
   
   // Team Relations
   ownedTeams     Team[]    @relation("TeamOwner")
@@ -120,7 +121,7 @@ model Conversation {
   
   // Assignment
   assignedToId           String?   // Staff assigned to this conversation
-  assignedTo             User?     @relation("AssignedTo", fields: [assignedToId], references: [id])
+  assignedTo             User?     @relation("AssignedTo", fields: [assignedToId], references: [id], onDelete: SetNull)
   assignedAt             DateTime? // When it was assigned
   
   createdAt              DateTime  @default(now())
@@ -165,6 +166,7 @@ model PageSettings {
   currentRotationIndex  Int      @default(0)
   lastRotationTime      DateTime?
   userId                String
+  user                  User     @relation(fields: [userId], references: [id], onDelete: Cascade)
   createdAt             DateTime @default(now())
   updatedAt             DateTime @updatedAt
 
@@ -202,4 +204,21 @@ model TeamMember {
   @@unique([teamId, userId])
   @@index([teamId])
   @@index([userId])
+}
+
+// Activity Log for tracking user actions
+model ActivityLog {
+  id          String   @id @default(cuid())
+  userId      String
+  userEmail   String
+  userName    String?
+  action      String   // login, logout, send_message, create_team, add_member, etc.
+  details     String?  @db.Text // JSON details
+  ipAddress   String?
+  userAgent   String?  @db.Text
+  createdAt   DateTime @default(now())
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([action])
 }

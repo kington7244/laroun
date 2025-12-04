@@ -5,6 +5,7 @@ import FacebookProvider from "next-auth/providers/facebook"
 import { PrismaAdapter } from "@next-auth/prisma-adapter"
 import { db } from "@/lib/db"
 import { compare } from "bcryptjs"
+import { logActivity } from "@/lib/activity-log"
 
 export const authOptions: NextAuthOptions = {
     debug: true,
@@ -84,6 +85,7 @@ export const authOptions: NextAuthOptions = {
                 user: {
                     ...session.user,
                     id: token.id as string,
+                    role: token.role as string,
                     image: token.picture as string | undefined,
                 },
             }
@@ -91,6 +93,22 @@ export const authOptions: NextAuthOptions = {
         async jwt({ token, user, account, profile, trigger }) {
             if (user) {
                 token.id = user.id
+                // Fetch role from database
+                const dbUser = await db.user.findUnique({
+                    where: { id: user.id },
+                    select: { role: true, email: true, name: true }
+                })
+                token.role = dbUser?.role || 'staff'
+                
+                // Log login activity
+                logActivity({
+                    userId: user.id,
+                    userEmail: dbUser?.email || user.email || '',
+                    userName: dbUser?.name || user.name,
+                    action: 'login',
+                    details: { provider: account?.provider || 'credentials' }
+                });
+                
                 // Get image from user object (from DB or OAuth)
                 if (user.image) {
                     token.picture = user.image
