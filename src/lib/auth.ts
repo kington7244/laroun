@@ -82,22 +82,27 @@ export const authOptions: NextAuthOptions = {
                 ...session,
                 user: {
                     ...session.user,
-                    id: token.id,
-                    image: token.picture,
+                    id: token.id as string,
+                    image: token.picture as string | undefined,
                 },
             }
         },
-        async jwt({ token, user, account, profile }) {
+        async jwt({ token, user, account, profile, trigger }) {
             if (user) {
                 token.id = user.id
+                // Get image from user object (from DB or OAuth)
+                if (user.image) {
+                    token.picture = user.image
+                }
             }
-            // Get image from Google profile
+            // Get image from Google profile on sign in
             if (account?.provider === "google" && profile) {
                 token.picture = (profile as any).picture
             }
-            // Get image from Facebook profile
+            // Get image from Facebook profile on sign in
             if (account?.provider === "facebook" && profile) {
-                token.picture = (profile as any).picture?.data?.url || (profile as any).picture
+                const fbProfile = profile as any
+                token.picture = fbProfile.picture?.data?.url || fbProfile.picture
             }
             return token
         },
