@@ -58,6 +58,8 @@ export default function AdBoxPage() {
     const [isDialogOpen, setIsDialogOpen] = useState(false);
     const [conversationTags, setConversationTags] = useState<string[]>([]);
     const [loadingTags, setLoadingTags] = useState(false);
+    const [adId, setAdId] = useState<string | null>(null);
+    const [isMessengerAds, setIsMessengerAds] = useState(false);
 
     // Message State
     const [messages, setMessages] = useState<any[]>([]);
@@ -492,6 +494,9 @@ export default function AdBoxPage() {
         const loadTags = async () => {
             if (!selectedConversation) {
                 console.log('[adbox] no conversation selected, skipping tag load');
+                setConversationTags([]);
+                setAdId(null);
+                setIsMessengerAds(false);
                 return;
             }
             try {
@@ -505,7 +510,25 @@ export default function AdBoxPage() {
                     page?.access_token
                 );
                 console.log('[adbox] received tags:', tags);
-                setConversationTags(tags || []);
+                
+                // Extract ad_id and messenger_ads from tags
+                let extractedAdId: string | null = null;
+                let hasMessengerAds = false;
+                const filteredTags = tags?.filter((tag: string) => {
+                    if (tag.startsWith('ad_id:')) {
+                        extractedAdId = tag.replace('ad_id:', '');
+                        return false; // Remove from tags array
+                    }
+                    if (tag === 'messenger_ads') {
+                        hasMessengerAds = true;
+                        return false; // Remove from tags array
+                    }
+                    return true;
+                }) || [];
+                
+                setConversationTags(filteredTags);
+                setAdId(extractedAdId);
+                setIsMessengerAds(hasMessengerAds);
             } catch (e) {
                 console.error('Failed to load tags', e);
             } finally {
@@ -1257,6 +1280,41 @@ export default function AdBoxPage() {
 
                                 <Separator />
 
+                                {/* Ad Information */}
+                                {(isMessengerAds || adId) && (
+                                    <div className="p-4">
+                                        <div className="space-y-3">
+                                            {isMessengerAds && (
+                                                <div className="flex items-center gap-3 p-3 bg-green-50 rounded-lg border border-green-200">
+                                                    <span className="text-lg">✓</span>
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">แหล่งข้อมูล</p>
+                                                        <p className="text-sm font-medium text-green-700">Messenger Ads</p>
+                                                    </div>
+                                                </div>
+                                            )}
+                                            {adId && (
+                                                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg border border-blue-200">
+                                                    <div>
+                                                        <p className="text-xs text-muted-foreground">Ad ID</p>
+                                                        <p className="text-sm font-medium text-blue-700 font-mono">{adId}</p>
+                                                    </div>
+                                                    <a
+                                                        href={`https://business.facebook.com/ads/manager/campaigns?act=${selectedConversation?.pageId}`}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="text-xs px-2 py-1 rounded bg-blue-500 text-white hover:bg-blue-600 transition-colors"
+                                                    >
+                                                        ดู Ad
+                                                    </a>
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
+                                )}
+
+                                <Separator />
+
                                 {/* Tags */}
                                 <div className="p-4">
                                     <div className="flex items-center gap-2 mb-2">
@@ -1266,49 +1324,17 @@ export default function AdBoxPage() {
                                     <div className="flex flex-wrap gap-2 min-h-[28px] items-center">
                                         {loadingTags ? (
                                             <span className="text-xs text-muted-foreground">กำลังโหลด...</span>
-                                        ) : conversationTags.length === 0 ? (
+                                        ) : conversationTags.length === 0 && !adId && !isMessengerAds ? (
                                             <span className="text-xs text-muted-foreground">ยังไม่มีแท็ก</span>
                                         ) : (
-                                            conversationTags.map((tag, idx) => {
-                                                // Handle ad_id tags - make them clickable
-                                                if (tag.startsWith('ad_id:')) {
-                                                    const adId = tag.replace('ad_id:', '');
-                                                    return (
-                                                        <a
-                                                            key={idx}
-                                                            href={`https://business.facebook.com/ads/manager/campaigns?act=${selectedPage?.id}`}
-                                                            target="_blank"
-                                                            rel="noopener noreferrer"
-                                                            title={`Ad ID: ${adId}`}
-                                                            className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200 cursor-pointer transition-colors"
-                                                        >
-                                                            📢 {adId.slice(-8)}
-                                                        </a>
-                                                    );
-                                                }
-                                                
-                                                // Handle messenger_ads tag
-                                                if (tag === 'messenger_ads') {
-                                                    return (
-                                                        <span
-                                                            key={idx}
-                                                            className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-300 font-medium"
-                                                        >
-                                                            ✓ Messenger Ads
-                                                        </span>
-                                                    );
-                                                }
-                                                
-                                                // Regular tags
-                                                return (
-                                                    <span
-                                                        key={idx}
-                                                        className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
-                                                    >
-                                                        {tag}
-                                                    </span>
-                                                );
-                                            })
+                                            conversationTags.map((tag, idx) => (
+                                                <span
+                                                    key={idx}
+                                                    className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
+                                                >
+                                                    {tag}
+                                                </span>
+                                            ))
                                         )}
                                     </div>
                                 </div>
