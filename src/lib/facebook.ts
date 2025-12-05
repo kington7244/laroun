@@ -689,7 +689,7 @@ export async function getConversationMessages(
     }
 }
 
-// Get conversation tags/labels and ad_id from messages
+// Get conversation tags/labels - including auto-generated ad campaign tags
 export async function getConversationTags(
     userAccessToken: string,
     conversationId: string,
@@ -697,91 +697,110 @@ export async function getConversationTags(
     pageAccessToken?: string
 ): Promise<string[]> {
     try {
-        // Use page token if available, otherwise user token
         const token = pageAccessToken || userAccessToken
+        console.log(`[getConversationTags] fetching tags for ${conversationId}`)
 
-        console.log(`[getConversationTags] fetching ad_id/tags for ${conversationId}`)
+        let allTags: string[] = []
 
-        let tags: string[] = []
-
-        // First, fetch messages to find ad_id from Click-to-Messenger referral
+        // Method 1: Try to get conversation with all available fields that might contain tags
         try {
-            const messagesUrl = `https://graph.facebook.com/v21.0/${conversationId}/messages?fields=id,message,from,referral{ad_id,source,type},created_time&limit=50&access_token=${token}`
-            
-            const messResp = await fetch(messagesUrl)
-            const messData = await messResp.json()
-            
-            if (!messData.error && messData.data && Array.isArray(messData.data)) {
-                console.log(`[getConversationTags] fetched ${messData.data.length} messages`)
-                
-                // Find first message with referral ad_id
-                const msgWithAdId = messData.data.find((m: any) => m.referral?.ad_id)
-                if (msgWithAdId?.referral?.ad_id) {
-                    const adIdTag = `ad_id.${msgWithAdId.referral.ad_id}`
-                    console.log(`[getConversationTags] found ad_id from referral: ${msgWithAdId.referral.ad_id}`)
-                    tags.push(adIdTag)
-                } else {
-                    console.log(`[getConversationTags] no referral ad_id in any messages`)
-                }
-            } else {
-                console.error(`[getConversationTags] messages error:`, messData.error?.message)
-            }
-        } catch (err) {
-            console.error(`[getConversationTags] messages fetch failed:`, err instanceof Error ? err.message : String(err))
-        }
-
-        // If we found ad_id from referral, return early
-        if (tags.length > 0) {
-            console.log(`[getConversationTags] returning ${tags.length} tag(s) from referral`)
-            return tags
-        }
-
-        // Fallback: try to get conversation metadata and info
-        try {
-            const convUrl = `https://graph.facebook.com/v21.0/${conversationId}?fields=id,participants,senders,wallpaper,former_participants&access_token=${token}`
+            const convUrl = `https://graph.facebook.com/v21.0/${conversationId}?fields=id,wallpaper,customization_info,form_data&access_token=${token}`
             const convResp = await fetch(convUrl)
             const convData = await convResp.json()
-            
-            if (convData.id) {
-                console.log(`[getConversationTags] conversation found, participants: ${convData.participants?.data?.length || 0}`)
-                // Log the structure to understand what data we have
-                if (convData.participants?.data) {
-                    convData.participants.data.forEach((p: any, i: number) => {
-                        if (i < 3) console.log(`[getConversationTags] participant ${i}:`, { id: p.id, name: p.name, email: p.email })
-                    })
-                }
-            }
+            console.log(`[getConversationTags] conversation data keys:`, Object.keys(convData).filter(k => k !== 'id'))
         } catch (err) {
-            console.error(`[getConversationTags] conversation metadata fetch failed:`, err instanceof Error ? err.message : String(err))
+            console.error(`[getConversationTags] conversation fetch error:`, err instanceof Error ? err.message : 'unknown')
         }
 
-        // Fallback: try to fetch conversation labels from page
+        // Method 2: Get page conversations with label_names field
         try {
-            const conversationsUrl = `https://graph.facebook.com/v21.0/${pageId}/conversations?fields=id,label_names&limit=100&access_token=${token}`
+            const pageConvUrl = `https://graph.facebook.com/v21.0/${pageId}/conversations?fields=id,label_names&limit=100&access_token=${token}`
+            const pageConvResp = await fetch(pageConvUrl)
+            const pageConvData = await pageConvResp.json()
             
-            const convResp = await fetch(conversationsUrl)
-            const convData = await convResp.json()
-            
-            if (convData.data && Array.isArray(convData.data)) {
-                const normalizedSearchId = conversationId.replace(/^t_/, '')
-                const targetConversation = convData.data.find((conv: any) => {
-                    const convId = conv.id.replace(/^t_/, '')
-                    return conv.id === conversationId || convId === normalizedSearchId
+            if (pageConvData.data && Array.isArray(pageConvData.data)) {
+                console.log(`[getConversationTags] found ${pageConvData.data.length} conversations in page`)
+                
+                // Normalize ID for matching
+                const searchId = conversationId.replace(/^t_/, '')
+                const targetConv = pageConvData.data.find((c: any) => {
+                    const cId = c.id.replace(/^t_/, '')
+                    return c.id === conversationId || cId === searchId || c.id === `t_${searchId}`
                 })
-
-                if (targetConversation?.label_names && Array.isArray(targetConversation.label_names) && targetConversation.label_names.length > 0) {
-                    console.log(`[getConversationTags] found ${targetConversation.label_names.length} labels`)
-                    tags = [...tags, ...targetConversation.label_names]
+                
+                if (targetConv) {
+                    console.log(`[getConversationTags] found matching conversation:`, { id: targetConv.id, labels: targetConv.label_names })
+                    if (targetConv.label_names && Array.isArray(targetConv.label_names)) {
+                        allTags = [...allTags, ...targetConv.label_names]
+                    }
                 } else {
-                    console.log(`[getConversationTags] conversation has no labels`)
+                    // Log first few conv IDs for debugging
+                    console.log(`[getConversationTags] no match found. page conversation IDs:`, pageConvData.data.slice(0, 3).map((c: any) => c.id))
                 }
             }
         } catch (err) {
-            console.error(`[getConversationTags] labels fetch failed:`, err instanceof Error ? err.message : String(err))
+            console.error(`[getConversationTags] page conversations error:`, err instanceof Error ? err.message : 'unknown')
         }
 
-        console.log(`[getConversationTags] returning ${tags.length} total tag(s)`)
-        return tags
+        // Method 3: Check for assigned labels via API (some pages use a different endpoint)
+        try {
+            const labelsUrl = `https://graph.facebook.com/v21.0/${conversationId}/labels?limit=50&access_token=${token}`
+            const labelsResp = await fetch(labelsUrl)
+            const labelsData = await labelsResp.json()
+            
+            if (labelsData.data && Array.isArray(labelsData.data)) {
+                console.log(`[getConversationTags] /labels endpoint returned ${labelsData.data.length} labels`)
+                const labelNames = labelsData.data.map((l: any) => l.name).filter(Boolean)
+                allTags = [...allTags, ...labelNames]
+            } else if (labelsData.error) {
+                console.log(`[getConversationTags] /labels endpoint error: ${labelsData.error.message}`)
+            }
+        } catch (err) {
+            console.error(`[getConversationTags] labels endpoint error:`, err instanceof Error ? err.message : 'unknown')
+        }
+
+        // Method 4: Get messages and extract any ad/campaign info from referral or other fields
+        try {
+            const messUrl = `https://graph.facebook.com/v21.0/${conversationId}/messages?fields=id,message,from,referral{ad_id,source,type},tags,created_time&limit=30&access_token=${token}`
+            const messResp = await fetch(messUrl)
+            const messData = await messResp.json()
+            
+            if (messData.data && Array.isArray(messData.data)) {
+                console.log(`[getConversationTags] fetched ${messData.data.length} messages`)
+                
+                // Check for referral ad_id
+                const adIds = new Set<string>()
+                const campaignTags = new Set<string>()
+                
+                messData.data.forEach((m: any) => {
+                    if (m.referral?.ad_id) {
+                        adIds.add(`ad_id.${m.referral.ad_id}`)
+                    }
+                    // Some fields might contain campaign info
+                    if (m.tags?.data && Array.isArray(m.tags.data)) {
+                        m.tags.data.forEach((t: any) => {
+                            if (t.name) campaignTags.add(t.name)
+                        })
+                    }
+                })
+                
+                if (adIds.size > 0) {
+                    console.log(`[getConversationTags] found ${adIds.size} ad_ids from messages`)
+                    allTags = [...allTags, ...Array.from(adIds)]
+                }
+                if (campaignTags.size > 0) {
+                    console.log(`[getConversationTags] found ${campaignTags.size} campaign tags from messages`)
+                    allTags = [...allTags, ...Array.from(campaignTags)]
+                }
+            }
+        } catch (err) {
+            console.error(`[getConversationTags] messages error:`, err instanceof Error ? err.message : 'unknown')
+        }
+
+        // Remove duplicates
+        const uniqueTags = Array.from(new Set(allTags))
+        console.log(`[getConversationTags] final tags (${uniqueTags.length}):`, uniqueTags)
+        return uniqueTags
     } catch (err) {
         console.error(`[getConversationTags] unexpected error:`, err instanceof Error ? err.message : String(err))
         return []

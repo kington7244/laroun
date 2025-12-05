@@ -490,9 +490,13 @@ export default function AdBoxPage() {
     // Load conversation tags when conversation changes
     useEffect(() => {
         const loadTags = async () => {
-            if (!selectedConversation) return;
+            if (!selectedConversation) {
+                console.log('[adbox] no conversation selected, skipping tag load');
+                return;
+            }
             try {
                 setLoadingTags(true);
+                console.log('[adbox] loading tags for conversation:', selectedConversation.id);
                 const page = pages.find(p => p.id === selectedConversation.pageId);
                 const tags = await fetchConversationTags(
                     selectedConversation.facebookConversationId || selectedConversation.id,
@@ -500,6 +504,7 @@ export default function AdBoxPage() {
                     selectedConversation.facebookConversationId,
                     page?.access_token
                 );
+                console.log('[adbox] received tags:', tags);
                 setConversationTags(tags || []);
             } catch (e) {
                 console.error('Failed to load tags', e);
