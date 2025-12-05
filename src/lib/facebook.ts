@@ -714,7 +714,7 @@ export async function getConversationTags(
 
         // Method 2: Get page conversations with label_names field
         try {
-            const pageConvUrl = `https://graph.facebook.com/v21.0/${pageId}/conversations?fields=id,label_names&limit=100&access_token=${token}`
+            const pageConvUrl = `https://graph.facebook.com/v21.0/${pageId}/conversations?fields=id,label_names,wallpaper,snippet&limit=100&access_token=${token}`
             const pageConvResp = await fetch(pageConvUrl)
             const pageConvData = await pageConvResp.json()
             
@@ -729,8 +729,9 @@ export async function getConversationTags(
                 })
                 
                 if (targetConv) {
-                    console.log(`[getConversationTags] found matching conversation:`, { id: targetConv.id, labels: targetConv.label_names })
+                    console.log(`[getConversationTags] found matching conversation:`, { id: targetConv.id, labels: targetConv.label_names, wallpaper: targetConv.wallpaper })
                     if (targetConv.label_names && Array.isArray(targetConv.label_names)) {
+                        console.log(`[getConversationTags] extracted label_names:`, targetConv.label_names)
                         allTags = [...allTags, ...targetConv.label_names]
                     }
                 } else {
@@ -799,6 +800,44 @@ export async function getConversationTags(
             }
         } catch (err) {
             console.error(`[getConversationTags] messages error:`, err instanceof Error ? err.message : 'unknown')
+        }
+
+        // Method 5: Fetch all labels from page and match by label assignment
+        try {
+            const labelsUrl = `https://graph.facebook.com/v21.0/${pageId}/labels?fields=id,name&limit=100&access_token=${token}`
+            const labelsResp = await fetch(labelsUrl)
+            const labelsData = await labelsResp.json()
+            
+            if (labelsData.data && Array.isArray(labelsData.data)) {
+                console.log(`[getConversationTags] found ${labelsData.data.length} page labels:`, labelsData.data.map((l: any) => l.name))
+                
+                // Now check which labels are assigned to this conversation
+                for (const label of labelsData.data) {
+                    try {
+                        const labelConvsUrl = `https://graph.facebook.com/v21.0/${label.id}/conversations?fields=id&limit=100&access_token=${token}`
+                        const labelConvsResp = await fetch(labelConvsUrl)
+                        const labelConvsData = await labelConvsResp.json()
+                        
+                        if (labelConvsData.data && Array.isArray(labelConvsData.data)) {
+                            const searchId = conversationId.replace(/^t_/, '')
+                            const isAssigned = labelConvsData.data.some((c: any) => {
+                                const cId = c.id.replace(/^t_/, '')
+                                return c.id === conversationId || cId === searchId || c.id === `t_${searchId}`
+                            })
+                            
+                            if (isAssigned) {
+                                console.log(`[getConversationTags] conversation has label: ${label.name}`)
+                                allTags.push(label.name)
+                            }
+                        }
+                    } catch (labelErr) {
+                        // Skip this label if error
+                        console.log(`[getConversationTags] error checking label ${label.name}`)
+                    }
+                }
+            }
+        } catch (err) {
+            console.error(`[getConversationTags] page labels error:`, err instanceof Error ? err.message : 'unknown')
         }
 
         // Remove duplicates
