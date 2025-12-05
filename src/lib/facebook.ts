@@ -657,7 +657,7 @@ export async function getConversationMessages(
     
     try {
         let url = `https://graph.facebook.com/v21.0/${conversationId}/messages?` +
-            `fields=id,message,from,created_time,attachments,sticker&` +
+            `fields=id,message,from,created_time,attachments,sticker,referral,tags,subject&` +
             `limit=${limit}&access_token=${token}`
         
         if (after) {
@@ -772,9 +772,13 @@ export async function getConversationTags(
                 const adIds = new Set<string>()
                 const campaignTags = new Set<string>()
                 
-                messData.data.forEach((m: any) => {
-                    if (m.referral?.ad_id) {
-                        adIds.add(`ad_id.${m.referral.ad_id}`)
+                messData.data.forEach((m: any, idx: number) => {
+                    console.log(`[getConversationTags] message ${idx} keys:`, Object.keys(m).filter(k => k !== 'id' && k !== 'message'))
+                    if (m.referral) {
+                        console.log(`[getConversationTags] message ${idx} referral:`, m.referral)
+                        if (m.referral.ad_id) {
+                            adIds.add(`ad_id.${m.referral.ad_id}`)
+                        }
                     }
                     // Some fields might contain campaign info
                     if (m.tags?.data && Array.isArray(m.tags.data)) {

@@ -1269,14 +1269,46 @@ export default function AdBoxPage() {
                                         ) : conversationTags.length === 0 ? (
                                             <span className="text-xs text-muted-foreground">ยังไม่มีแท็ก</span>
                                         ) : (
-                                            conversationTags.map((tag, idx) => (
-                                                <span
-                                                    key={idx}
-                                                    className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
-                                                >
-                                                    {tag}
-                                                </span>
-                                            ))
+                                            conversationTags.map((tag, idx) => {
+                                                // Handle ad_id tags - make them clickable
+                                                if (tag.startsWith('ad_id:')) {
+                                                    const adId = tag.replace('ad_id:', '');
+                                                    return (
+                                                        <a
+                                                            key={idx}
+                                                            href={`https://business.facebook.com/ads/manager/campaigns?act=${selectedPage?.id}`}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            title={`Ad ID: ${adId}`}
+                                                            className="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-700 border border-blue-300 hover:bg-blue-200 cursor-pointer transition-colors"
+                                                        >
+                                                            📢 {adId.slice(-8)}
+                                                        </a>
+                                                    );
+                                                }
+                                                
+                                                // Handle messenger_ads tag
+                                                if (tag === 'messenger_ads') {
+                                                    return (
+                                                        <span
+                                                            key={idx}
+                                                            className="text-xs px-2 py-1 rounded-full bg-green-100 text-green-700 border border-green-300 font-medium"
+                                                        >
+                                                            ✓ Messenger Ads
+                                                        </span>
+                                                    );
+                                                }
+                                                
+                                                // Regular tags
+                                                return (
+                                                    <span
+                                                        key={idx}
+                                                        className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
+                                                    >
+                                                        {tag}
+                                                    </span>
+                                                );
+                                            })
                                         )}
                                     </div>
                                 </div>
