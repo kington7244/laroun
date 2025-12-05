@@ -805,10 +805,13 @@ export async function getConversationTags(
         // Method 5: Fetch all labels from page and match by label assignment
         try {
             const labelsUrl = `https://graph.facebook.com/v21.0/${pageId}/labels?fields=id,name&limit=100&access_token=${token}`
+            console.log(`[getConversationTags] Method 5: fetching labels from ${pageId}`)
             const labelsResp = await fetch(labelsUrl)
             const labelsData = await labelsResp.json()
             
-            if (labelsData.data && Array.isArray(labelsData.data)) {
+            console.log(`[getConversationTags] Method 5 response:`, labelsData.error ? `Error: ${JSON.stringify(labelsData.error)}` : `Got ${labelsData.data?.length || 0} labels`)
+            
+            if (labelsData.data && Array.isArray(labelsData.data) && labelsData.data.length > 0) {
                 console.log(`[getConversationTags] found ${labelsData.data.length} page labels:`, labelsData.data.map((l: any) => l.name))
                 
                 // Now check which labels are assigned to this conversation
@@ -835,6 +838,8 @@ export async function getConversationTags(
                         console.log(`[getConversationTags] error checking label ${label.name}`)
                     }
                 }
+            } else {
+                console.log(`[getConversationTags] Method 5: no labels found or error`)
             }
         } catch (err) {
             console.error(`[getConversationTags] page labels error:`, err instanceof Error ? err.message : 'unknown')
