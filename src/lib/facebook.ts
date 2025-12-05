@@ -761,7 +761,7 @@ export async function getConversationTags(
 
         // Method 4: Get messages and extract any ad/campaign info from referral or other fields
         try {
-            const messUrl = `https://graph.facebook.com/v21.0/${conversationId}/messages?fields=id,message,from,referral{ad_id,source,type},tags,created_time&limit=30&access_token=${token}`
+            const messUrl = `https://graph.facebook.com/v21.0/${conversationId}/messages?fields=id,message,from,referral,tags,created_time,subject,message_tags&limit=30&access_token=${token}`
             const messResp = await fetch(messUrl)
             const messData = await messResp.json()
             
@@ -777,7 +777,7 @@ export async function getConversationTags(
                     if (m.referral) {
                         console.log(`[getConversationTags] message ${idx} referral:`, m.referral)
                         if (m.referral.ad_id) {
-                            adIds.add(`ad_id.${m.referral.ad_id}`)
+                            adIds.add(`ad_id:${m.referral.ad_id}`)
                         }
                     }
                     // Some fields might contain campaign info
