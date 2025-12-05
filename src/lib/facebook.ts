@@ -697,16 +697,53 @@ export async function getConversationTags(
     pageAccessToken?: string
 ): Promise<string[]> {
     try {
+        // Use page token if available, otherwise user token
         const token = pageAccessToken || userAccessToken
+
         console.log(`[getConversationTags] fetching tags for ${conversationId}`)
+
+        // Fetch all conversations for this page with their label_names
+        // This is the correct Facebook API approach for conversation labels
+        const conversationsUrl = `https://graph.facebook.com/v21.0/${pageId}/conversations?fields=id,label_names&limit=100&access_token=${token}`
         
-        // For now, just return empty array to test if the function itself is crashing
-        return []
+        const resp = await fetch(conversationsUrl)
+        const data = await resp.json()
+        
+        if (data.error) {
+            console.error(`[getConversationTags] API error:`, data.error?.message)
+            return []
+        }
+
+        if (!data.data || !Array.isArray(data.data)) {
+            console.log(`[getConversationTags] no conversations data returned`)
+            return []
+        }
+
+        // Find the conversation matching this ID
+        const normalizedSearchId = conversationId.replace(/^t_/, '')
+        const targetConversation = data.data.find((conv: any) => {
+            const convId = conv.id.replace(/^t_/, '')
+            return conv.id === conversationId || convId === normalizedSearchId
+        })
+
+        if (!targetConversation) {
+            console.log(`[getConversationTags] conversation ${conversationId} not found in page conversations`)
+            return []
+        }
+
+        if (!targetConversation.label_names || !Array.isArray(targetConversation.label_names)) {
+            console.log(`[getConversationTags] no labels found for conversation`)
+            return []
+        }
+
+        console.log(`[getConversationTags] found ${targetConversation.label_names.length} labels:`, targetConversation.label_names)
+        return targetConversation.label_names
     } catch (err) {
-        console.error(`[getConversationTags] error:`, err instanceof Error ? err.message : String(err))
+        console.error(`[getConversationTags] unexpected error:`, err instanceof Error ? err.message : String(err))
         return []
     }
 }
+
 
 
 // Fetch all messages from a conversation (with pagination)
