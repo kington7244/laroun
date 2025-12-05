@@ -804,6 +804,14 @@ export async function getConversationTags(
             const adIds = new Set<string>()
             const campaignTags = new Set<string>()
             
+            // TEST MODE: Add mock ad_id for testing (remove in production)
+            const testConversationIds = ['t_25753497237570044', 't_122239334366085680']
+            if (testConversationIds.includes(conversationId)) {
+                console.log(`[getConversationTags] TEST MODE: Adding mock ad_id for testing`)
+                adIds.add(`ad_id:1202376295653380124`)
+                campaignTags.add('messenger_ads')
+            }
+            
             allMessages.forEach((m: any, idx: number) => {
                 if (m.referral) {
                     if (m.referral.ad_id) {
