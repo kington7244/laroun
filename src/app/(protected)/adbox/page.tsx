@@ -25,6 +25,7 @@ import {
     getCurrentUser,
     assignConversation,
     autoAssignAllConversations,
+    fetchConversationTags,
     getTeamInfo
 } from '@/app/actions';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -55,6 +56,8 @@ export default function AdBoxPage() {
     const [loadingChat, setLoadingChat] = useState(false);
     const [selectedConversation, setSelectedConversation] = useState<any | null>(null);
     const [isDialogOpen, setIsDialogOpen] = useState(false);
+    const [conversationTags, setConversationTags] = useState<string[]>([]);
+    const [loadingTags, setLoadingTags] = useState(false);
 
     // Message State
     const [messages, setMessages] = useState<any[]>([]);
@@ -480,8 +483,32 @@ export default function AdBoxPage() {
         setMessages([]);
         setAllMessagesCache([]);
         setSelectedConversation(conv);
+        setConversationTags([]);
         loadMessages(conv);
     };
+
+    // Load conversation tags when conversation changes
+    useEffect(() => {
+        const loadTags = async () => {
+            if (!selectedConversation) return;
+            try {
+                setLoadingTags(true);
+                const page = pages.find(p => p.id === selectedConversation.pageId);
+                const tags = await fetchConversationTags(
+                    selectedConversation.facebookConversationId || selectedConversation.id,
+                    selectedConversation.pageId,
+                    selectedConversation.facebookConversationId,
+                    page?.access_token
+                );
+                setConversationTags(tags || []);
+            } catch (e) {
+                console.error('Failed to load tags', e);
+            } finally {
+                setLoadingTags(false);
+            }
+        };
+        loadTags();
+    }, [selectedConversation, pages]);
 
     // Handle assign conversation
     const handleAssignConversation = async (conversationId: string, assignToId: string | null) => {
@@ -1231,8 +1258,21 @@ export default function AdBoxPage() {
                                         <Tag className="h-4 w-4 text-muted-foreground" />
                                         <span className="text-sm font-medium">แท็ก</span>
                                     </div>
-                                    <div className="flex flex-wrap gap-1">
-                                        <span className="text-xs text-muted-foreground">ยังไม่มีแท็ก</span>
+                                    <div className="flex flex-wrap gap-2 min-h-[28px] items-center">
+                                        {loadingTags ? (
+                                            <span className="text-xs text-muted-foreground">กำลังโหลด...</span>
+                                        ) : conversationTags.length === 0 ? (
+                                            <span className="text-xs text-muted-foreground">ยังไม่มีแท็ก</span>
+                                        ) : (
+                                            conversationTags.map((tag, idx) => (
+                                                <span
+                                                    key={idx}
+                                                    className="text-xs px-2 py-1 rounded-full bg-primary/10 text-primary border border-primary/20"
+                                                >
+                                                    {tag}
+                                                </span>
+                                            ))
+                                        )}
                                     </div>
                                 </div>
 

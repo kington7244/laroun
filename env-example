@@ -13,3 +13,9 @@ FACEBOOK_APP_SECRET="..."
 # Resend Email Service
 RESEND_API_KEY="re_xxxxxxxxxx"
 EMAIL_FROM="Laroun <noreply@yourdomain.com>"
+
+
+# Redis Cache (optional - graceful fallback if not available)
+REDIS_URL="redis://default:Aa1XAAIncDI4YWY0NTJjMzg1OWI0MzljYmMzYTRjOTEwNzJjMWY3ZnAyNDQzNzU@magnetic-griffon-44375.upstash.io:6379"
+# Socket.IO (optional - for real-time updates)
+NEXT_PUBLIC_SOCKET_URL="http://localhost:3000"

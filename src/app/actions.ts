@@ -8,7 +8,9 @@ import {
     getPages, 
     getPageConversations, 
     getAllConversationMessages, 
-    sendMessage 
+    sendMessage, 
+    getConversationTags,
+    getFreshPageAccessToken
 } from '@/lib/facebook';
 
 // ===== Token Management =====
@@ -372,6 +374,66 @@ export async function fetchMessages(conversationId: string, pageId: string, page
     } catch (error: any) {
         console.error('Failed to fetch messages:', error);
         return formattedDbMessages;
+    }
+}
+
+// Fetch conversation tags from Facebook Page Inbox labels
+export async function fetchConversationTags(conversationId: string, pageId: string, facebookConversationId?: string, pageAccessToken?: string) {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+        throw new Error("Not authenticated");
+    }
+
+    const userId = (session.user as any).id;
+
+    const accessToken = await getUserFacebookToken(userId);
+    if (!accessToken) {
+        console.log('[fetchConversationTags] No Facebook token found for user');
+        return [];
+    }
+
+    const fbConvId = facebookConversationId || conversationId;
+
+    // Try to get page access token; refresh user token if needed; also capture app token
+    let pageTokenToUse: string | undefined = pageAccessToken;
+    let refreshedUserToken: string | null = null;
+    let appAccessToken: string | null = null;
+
+    try {
+        const pageSettings = await prisma.pageSettings.findUnique({
+            where: { pageId },
+            select: { pageAccessToken: true }
+        });
+        if (pageSettings?.pageAccessToken) {
+            pageTokenToUse = pageSettings.pageAccessToken;
+        }
+    } catch (e) {
+        console.error('[fetchConversationTags] Failed to read page token from DB:', e);
+    }
+
+    if (!pageTokenToUse) {
+        try {
+            const { pageAccessToken, refreshedUserToken: newUserToken, appAccessToken: bizToken } = await getFreshPageAccessToken(accessToken, pageId);
+            if (pageAccessToken) pageTokenToUse = pageAccessToken;
+            if (newUserToken) refreshedUserToken = newUserToken;
+            if (bizToken) appAccessToken = bizToken;
+        } catch (err) {
+            console.error('[fetchConversationTags] getFreshPageAccessToken failed:', err);
+        }
+    }
+
+    try {
+        const userTokenForCall = pageTokenToUse ? accessToken : accessToken; // keep existing user token for Graph; page token is passed separately
+        const tags = await getConversationTags(userTokenForCall, fbConvId, pageId, pageTokenToUse || undefined);
+        if (!tags || tags.length === 0) {
+            console.log('[fetchConversationTags] no tags', { conv: fbConvId, pageId, refreshed: !!refreshedUserToken, hasPage: !!pageTokenToUse, hasApp: !!appAccessToken });
+        } else {
+            console.log('[fetchConversationTags] tags found', { conv: fbConvId, pageId, tags, refreshed: !!refreshedUserToken, hasPage: !!pageTokenToUse, hasApp: !!appAccessToken });
+        }
+        return JSON.parse(JSON.stringify(tags));
+    } catch (error) {
+        console.error('Failed to fetch conversation tags:', error);
+        return [];
     }
 }
 

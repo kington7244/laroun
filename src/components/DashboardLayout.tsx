@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useMemo } from "react"
 import Sidebar from "@/components/Sidebar"
 import Header from "@/components/Header"
 import { User } from "next-auth"
@@ -13,26 +13,31 @@ interface DashboardLayoutProps {
     }
 }
 
-const headerColors: Record<string, string> = {
-    violet: "bg-violet-100",
-    blue: "bg-blue-100",
-    green: "bg-green-100",
-    orange: "bg-orange-100",
-    rose: "bg-rose-100",
-    cyan: "bg-cyan-100",
-    indigo: "bg-indigo-100",
-    teal: "bg-teal-100",
-    amber: "bg-amber-100",
-    pink: "bg-pink-100",
-    sky: "bg-sky-100",
-    slate: "bg-slate-200",
-    emerald: "bg-emerald-100",
-    lavender: "bg-purple-50",
-}
-
 export default function DashboardLayout({ children, user }: DashboardLayoutProps) {
     const [isCollapsed, setIsCollapsed] = useState(false)
-    const { primaryColor } = useTheme()
+    const { primaryIntensity } = useTheme()
+
+    const headerBackground = useMemo(() => {
+        // Map intensity 60-140 to 0-1
+        const scale = Math.min(Math.max((primaryIntensity - 60) / 80, 0), 1)
+
+        // At low intensity, keep color saturated and just add white; at high, add depth with black
+        const startBlend = 65 + scale * 20 // 65% -> 85%
+        const endBlendLow = 70 + scale * 10 // 70% -> 80% when low
+        const endBlendHigh = 70 + scale * 25 // 70% -> 95% when high
+
+        const mixTop = `color-mix(in oklab, var(--primary) ${startBlend}%, white)`
+        const mixBottom = scale < 0.35
+            ? `color-mix(in oklab, var(--primary) ${endBlendLow}%, white)`
+            : `color-mix(in oklab, var(--primary) ${endBlendHigh}%, black)`
+
+        const opacity = 0.7 + scale * 0.25 // 0.7 -> 0.95
+
+        return {
+            background: `linear-gradient(135deg, ${mixTop} 0%, ${mixBottom} 100%)`,
+            opacity,
+        }
+    }, [primaryIntensity])
 
     useEffect(() => {
         const savedState = localStorage.getItem('sidebarCollapsed')
@@ -50,8 +55,8 @@ export default function DashboardLayout({ children, user }: DashboardLayoutProps
     return (
         <div className="flex h-screen overflow-hidden">
             <div className="flex flex-col flex-1 overflow-hidden bg-slate-50 relative">
-                {/* Tall Background with Primary Color */}
-                <div className={`absolute top-0 left-0 right-0 h-64 ${headerColors[primaryColor] || 'bg-sky-100'} z-0`} />
+                {/* Tall Background with Primary Color (reacts to intensity slider) */}
+                <div className="absolute top-0 left-0 right-0 h-64 z-0" style={headerBackground} />
 
                 <div className="relative z-10 flex flex-col h-full">
                     <Header user={user} />

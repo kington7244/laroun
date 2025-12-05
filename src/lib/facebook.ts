@@ -535,6 +535,70 @@ export async function getPages(accessToken: string) {
     return data.data || []
 }
 
+// Exchange short-lived user token to long-lived, then fetch page token; also return app (business) token
+export async function getFreshPageAccessToken(
+    userAccessToken: string,
+    pageId: string
+) {
+    let workingUserToken = userAccessToken
+    let pageAccessToken: string | null = null
+    let appAccessToken: string | null = null
+
+    const appId = process.env.FACEBOOK_APP_ID
+    const appSecret = process.env.FACEBOOK_APP_SECRET
+
+    // Helper to fetch page token using a user token
+    const fetchPageToken = async (token: string) => {
+        const resp = await fetch(
+            `https://graph.facebook.com/v21.0/${pageId}?fields=access_token&access_token=${token}`
+        )
+        const data = await resp.json()
+        if (data?.access_token) return data.access_token
+        throw new Error(data?.error?.message || 'Failed to fetch page token')
+    }
+
+    try {
+        pageAccessToken = await fetchPageToken(workingUserToken)
+    } catch (e) {
+        // Try to exchange for a long-lived token then retry
+        if (appId && appSecret) {
+            try {
+                const exchangeResp = await fetch(
+                    `https://graph.facebook.com/v21.0/oauth/access_token?grant_type=fb_exchange_token&client_id=${appId}&client_secret=${appSecret}&fb_exchange_token=${workingUserToken}`
+                )
+                const exchangeData = await exchangeResp.json()
+                if (exchangeData?.access_token) {
+                    workingUserToken = exchangeData.access_token
+                    pageAccessToken = await fetchPageToken(workingUserToken)
+                }
+            } catch (err) {
+                console.error('[getFreshPageAccessToken] exchange failed:', err)
+            }
+        }
+    }
+
+    // App (business) token via client credentials
+    if (appId && appSecret) {
+        try {
+            const appResp = await fetch(
+                `https://graph.facebook.com/oauth/access_token?client_id=${appId}&client_secret=${appSecret}&grant_type=client_credentials`
+            )
+            const appData = await appResp.json()
+            if (appData?.access_token) {
+                appAccessToken = appData.access_token
+            }
+        } catch (err) {
+            console.error('[getFreshPageAccessToken] app token failed:', err)
+        }
+    }
+
+    return {
+        pageAccessToken,
+        refreshedUserToken: workingUserToken !== userAccessToken ? workingUserToken : null,
+        appAccessToken,
+    }
+}
+
 export async function getPageConversations(userAccessToken: string, pageId: string, pageAccessToken?: string) {
     const token = pageAccessToken || userAccessToken
     
@@ -583,6 +647,73 @@ export async function getConversationMessages(
         messages: data.data || [],
         paging: data.paging || null
     }
+}
+
+// Get conversation tags/labels (Page Inbox labels)
+export async function getConversationTags(
+    userAccessToken: string,
+    conversationId: string,
+    pageId: string,
+    pageAccessToken?: string
+) {
+    // Always prefer a page access token; fetch if not provided
+    let token = pageAccessToken
+    if (!token) {
+        try {
+            const pageResp = await fetch(
+                `https://graph.facebook.com/v21.0/${pageId}?fields=access_token&access_token=${userAccessToken}`
+            )
+            const pageData = await pageResp.json()
+            if (!pageData.error && pageData.access_token) {
+                token = pageData.access_token
+            }
+        } catch (err) {
+            console.error(`[getConversationTags] failed to fetch page token for ${pageId}:`, err)
+        }
+    }
+
+    // Fallback to user token if we still don't have a page token
+    token = token || userAccessToken
+
+    // Try tags field first
+    const urlWithTags = `https://graph.facebook.com/v21.0/${conversationId}?fields=tags.limit(100){name},labels.limit(100){name},messages.limit(50){id,tags,message,message_tags,referral{ad_id,source,type,source_id},created_time}&access_token=${token}`
+
+    const response = await fetch(urlWithTags)
+    const data = await response.json()
+
+    if (data.error) {
+        console.error(`Error fetching tags for conversation ${conversationId}:`, data.error)
+        return []
+    }
+
+    const tagsFromTags = data.tags?.data?.map((t: any) => t.name).filter(Boolean) || []
+    const tagsFromLabels = data.labels?.data?.map((t: any) => t.name).filter(Boolean) || []
+
+    const tagsFromMessages = (data.messages?.data || []).flatMap((m: any) => {
+        const tagNames = (m.tags?.data || []).map((t: any) => t.name).filter(Boolean)
+        const messageTagNames = (m.message_tags || m.messageTags || []).map((t: any) => t.name || t).filter(Boolean)
+        const referralAdId = m.referral?.ad_id ? [`ad_id.${m.referral.ad_id}`] : []
+        const referralSource = m.referral?.source ? [`ref_${m.referral.source}`] : []
+        const referralSourceId = m.referral?.source_id ? [`ref_source_id.${m.referral.source_id}`] : []
+        return [...tagNames, ...messageTagNames, ...referralAdId, ...referralSource, ...referralSourceId]
+    })
+
+    // If both empty, try labels edge directly (some apps require that)
+    if (tagsFromTags.length === 0 && tagsFromLabels.length === 0 && tagsFromMessages.length === 0) {
+        try {
+            const labelsResp = await fetch(`https://graph.facebook.com/v21.0/${conversationId}/labels?limit=100&access_token=${token}`)
+            const labelsData = await labelsResp.json()
+            if (!labelsData.error) {
+                const labelNames = labelsData.data?.map((t: any) => t.name).filter(Boolean) || []
+                return labelNames
+            }
+        } catch (err) {
+            console.error(`Error fetching labels edge for conversation ${conversationId}:`, err)
+        }
+    }
+
+    const merged = Array.from(new Set([...tagsFromTags, ...tagsFromLabels, ...tagsFromMessages]))
+    return merged
 }
 
 // Fetch all messages from a conversation (with pagination)

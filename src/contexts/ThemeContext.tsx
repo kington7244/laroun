@@ -10,6 +10,8 @@ interface ThemeContextType {
     setTheme: (theme: Theme) => void
     primaryColor: PrimaryColor
     setPrimaryColor: (color: PrimaryColor) => void
+    primaryIntensity: number
+    setPrimaryIntensity: (value: number) => void
     compactMode: boolean
     setCompactMode: (compact: boolean) => void
     showAnimations: boolean
@@ -38,6 +40,7 @@ const primaryColors: Record<PrimaryColor, { light: string; dark: string }> = {
 export function ThemeProvider({ children }: { children: ReactNode }) {
     const [theme, setThemeState] = useState<Theme>("light")
     const [primaryColor, setPrimaryColorState] = useState<PrimaryColor>("sky")
+    const [primaryIntensity, setPrimaryIntensityState] = useState<number>(100)
     const [compactMode, setCompactModeState] = useState(false)
     const [showAnimations, setShowAnimationsState] = useState(true)
     const [mounted, setMounted] = useState(false)
@@ -47,14 +50,38 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         // Load from localStorage
         const savedTheme = localStorage.getItem("theme") as Theme
         const savedColor = localStorage.getItem("primaryColor") as PrimaryColor
+        const savedIntensity = localStorage.getItem("primaryIntensity")
         const savedCompact = localStorage.getItem("compactMode")
         const savedAnimations = localStorage.getItem("showAnimations")
 
         if (savedTheme) setThemeState(savedTheme)
         if (savedColor) setPrimaryColorState(savedColor)
+        if (savedIntensity) setPrimaryIntensityState(Number(savedIntensity))
         if (savedCompact) setCompactModeState(savedCompact === "true")
         if (savedAnimations !== null) setShowAnimationsState(savedAnimations !== "false")
     }, [])
+
+    const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
+
+    const adjustOklch = (color: string, intensity: number) => {
+        // Preserve hue and keep saturation even on low intensity to avoid dull gray
+        const match = color.match(/oklch\(([^)]+)\)/)
+        if (!match) return color
+        const [lightnessStr, chromaStr, hueStr] = match[1].split(/\s+/)
+        const lightness = parseFloat(lightnessStr)
+        const chroma = parseFloat(chromaStr)
+        const hue = hueStr
+
+        // Map 60-140 -> chroma factor 0.8 - 1.6 (never drop too low)
+        const chromaFactor = clamp(0.8 + (intensity - 100) / 100, 0.8, 1.6)
+
+        // Lighten slightly when intensity is low, darken slightly when high
+        const lightnessAdjust = (100 - intensity) / 400 // +0.1 at min, -0.1 at max
+        const newLightness = clamp(lightness + lightnessAdjust, 0, 1)
+        const newChroma = clamp(chroma * chromaFactor, 0, 0.55)
+
+        return `oklch(${newLightness.toFixed(3)} ${newChroma.toFixed(3)} ${hue})`
+    }
 
     useEffect(() => {
         if (!mounted) return
@@ -72,7 +99,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         // Apply primary color
         const colorValue = primaryColors[primaryColor]
         const isDark = theme === "dark" || (theme === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches)
-        root.style.setProperty("--primary", isDark ? colorValue.dark : colorValue.light)
+        const adjustedColor = adjustOklch(isDark ? colorValue.dark : colorValue.light, primaryIntensity)
+        root.style.setProperty("--primary", adjustedColor)
 
         // Apply compact mode
         if (compactMode) {
@@ -87,7 +115,7 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
         } else {
             root.classList.remove("no-animations")
         }
-    }, [theme, primaryColor, compactMode, showAnimations, mounted])
+    }, [theme, primaryColor, primaryIntensity, compactMode, showAnimations, mounted])
 
     const setTheme = (newTheme: Theme) => {
         setThemeState(newTheme)
@@ -97,6 +125,12 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
     const setPrimaryColor = (newColor: PrimaryColor) => {
         setPrimaryColorState(newColor)
         localStorage.setItem("primaryColor", newColor)
+    }
+
+    const setPrimaryIntensity = (value: number) => {
+        const clamped = clamp(value, 40, 140)
+        setPrimaryIntensityState(clamped)
+        localStorage.setItem("primaryIntensity", String(clamped))
     }
 
     const setCompactMode = (compact: boolean) => {
@@ -119,6 +153,8 @@ export function ThemeProvider({ children }: { children: ReactNode }) {
             setTheme,
             primaryColor,
             setPrimaryColor,
+            primaryIntensity,
+            setPrimaryIntensity,
             compactMode,
             setCompactMode,
             showAnimations,

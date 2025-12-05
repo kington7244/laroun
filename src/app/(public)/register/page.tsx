@@ -20,9 +20,21 @@ export default function RegisterPage() {
         setIsLoading(true)
 
         const formData = new FormData(event.currentTarget)
-        const name = formData.get("name")
-        const email = formData.get("email")
-        const password = formData.get("password")
+        const name = String(formData.get("name") || "").trim()
+        const email = String(formData.get("email") || "").trim()
+        const password = String(formData.get("password") || "")
+
+        if (!name || !email || !password) {
+            toast.error("Please fill in all fields")
+            setIsLoading(false)
+            return
+        }
+
+        if (password.length < 8) {
+            toast.error("Password must be at least 8 characters")
+            setIsLoading(false)
+            return
+        }
 
         try {
             const response = await fetch("/api/register", {
@@ -119,6 +131,7 @@ export default function RegisterPage() {
                                     name="password" 
                                     type="password" 
                                     placeholder="Create a strong password"
+                                    minLength={8}
                                     required 
                                     className="h-12 rounded-xl border-gray-200 focus:border-blue-500 focus:ring-blue-500"
                                 />

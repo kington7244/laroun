@@ -2,6 +2,7 @@ import { db } from "@/lib/db"
 import { hash } from "bcryptjs"
 import { NextResponse } from "next/server"
 import { z } from "zod"
+import { Prisma } from "@prisma/client"
 
 const userSchema = z.object({
     name: z.string().min(1, "Name is required"),
@@ -44,6 +45,19 @@ export async function POST(req: Request) {
         )
     } catch (error) {
         console.error("Registration error:", error)
+
+        if (error instanceof z.ZodError) {
+            const message = error.issues[0]?.message || "Invalid input"
+            return NextResponse.json({ message }, { status: 400 })
+        }
+
+        if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
+            return NextResponse.json(
+                { message: "User with this email already exists" },
+                { status: 409 }
+            )
+        }
+
         return NextResponse.json(
             { message: "Something went wrong" },
             { status: 500 }

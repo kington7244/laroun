@@ -63,7 +63,7 @@ export default function SettingsPage() {
     const activeSection = searchParams.get("tab") || "account"
     const { data: session } = useSession()
     const { language, setLanguage, timezone, setTimezone } = useLanguage()
-    const { theme, setTheme, primaryColor, setPrimaryColor, compactMode, setCompactMode, showAnimations, setShowAnimations } = useTheme()
+    const { theme, setTheme, primaryColor, setPrimaryColor, primaryIntensity, setPrimaryIntensity, compactMode, setCompactMode, showAnimations, setShowAnimations } = useTheme()
     
     const [settings, setSettings] = useState<UserSettings | null>(null)
     const [loading, setLoading] = useState(true)
@@ -596,6 +596,23 @@ export default function SettingsPage() {
                                                 <span className={cn("text-xs", (settings?.primaryColor || primaryColor) === color.id ? "font-medium text-primary" : "")}>{color.name}</span>
                                             </button>
                                         ))}
+                                    </div>
+                                    <div className="pt-4 space-y-2">
+                                        <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                            <span>Color intensity</span>
+                                            <span className="font-medium text-foreground">{primaryIntensity}%</span>
+                                        </div>
+                                        <input
+                                            type="range"
+                                            min={60}
+                                            max={140}
+                                            step={1}
+                                            value={primaryIntensity}
+                                            onChange={(e) => setPrimaryIntensity(Number(e.target.value))}
+                                            className="w-full"
+                                            style={{ accentColor: "var(--primary)" }}
+                                        />
+                                        <p className="text-xs text-muted-foreground">ปรับความเข้มของสีหลัก (บันทึกไว้ในเบราว์เซอร์ของคุณ)</p>
                                     </div>
                                 </div>
 
