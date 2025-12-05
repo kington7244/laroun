@@ -689,7 +689,7 @@ export async function getConversationMessages(
     }
 }
 
-// Get conversation tags/labels (Page Inbox labels)
+// Get conversation tags/labels and ad_id from messages
 export async function getConversationTags(
     userAccessToken: string,
     conversationId: string,
@@ -700,44 +700,88 @@ export async function getConversationTags(
         // Use page token if available, otherwise user token
         const token = pageAccessToken || userAccessToken
 
-        console.log(`[getConversationTags] fetching tags for ${conversationId}`)
+        console.log(`[getConversationTags] fetching ad_id/tags for ${conversationId}`)
 
-        // Fetch all conversations for this page with their label_names
-        // This is the correct Facebook API approach for conversation labels
-        const conversationsUrl = `https://graph.facebook.com/v21.0/${pageId}/conversations?fields=id,label_names&limit=100&access_token=${token}`
-        
-        const resp = await fetch(conversationsUrl)
-        const data = await resp.json()
-        
-        if (data.error) {
-            console.error(`[getConversationTags] API error:`, data.error?.message)
-            return []
+        let tags: string[] = []
+
+        // First, fetch messages to find ad_id from Click-to-Messenger referral
+        try {
+            const messagesUrl = `https://graph.facebook.com/v21.0/${conversationId}/messages?fields=id,message,from,referral{ad_id,source,type},created_time&limit=50&access_token=${token}`
+            
+            const messResp = await fetch(messagesUrl)
+            const messData = await messResp.json()
+            
+            if (!messData.error && messData.data && Array.isArray(messData.data)) {
+                console.log(`[getConversationTags] fetched ${messData.data.length} messages`)
+                
+                // Find first message with referral ad_id
+                const msgWithAdId = messData.data.find((m: any) => m.referral?.ad_id)
+                if (msgWithAdId?.referral?.ad_id) {
+                    const adIdTag = `ad_id.${msgWithAdId.referral.ad_id}`
+                    console.log(`[getConversationTags] found ad_id from referral: ${msgWithAdId.referral.ad_id}`)
+                    tags.push(adIdTag)
+                } else {
+                    console.log(`[getConversationTags] no referral ad_id in any messages`)
+                }
+            } else {
+                console.error(`[getConversationTags] messages error:`, messData.error?.message)
+            }
+        } catch (err) {
+            console.error(`[getConversationTags] messages fetch failed:`, err instanceof Error ? err.message : String(err))
         }
 
-        if (!data.data || !Array.isArray(data.data)) {
-            console.log(`[getConversationTags] no conversations data returned`)
-            return []
+        // If we found ad_id from referral, return early
+        if (tags.length > 0) {
+            console.log(`[getConversationTags] returning ${tags.length} tag(s) from referral`)
+            return tags
         }
 
-        // Find the conversation matching this ID
-        const normalizedSearchId = conversationId.replace(/^t_/, '')
-        const targetConversation = data.data.find((conv: any) => {
-            const convId = conv.id.replace(/^t_/, '')
-            return conv.id === conversationId || convId === normalizedSearchId
-        })
-
-        if (!targetConversation) {
-            console.log(`[getConversationTags] conversation ${conversationId} not found in page conversations`)
-            return []
+        // Fallback: try to get conversation metadata and info
+        try {
+            const convUrl = `https://graph.facebook.com/v21.0/${conversationId}?fields=id,participants,senders,wallpaper,former_participants&access_token=${token}`
+            const convResp = await fetch(convUrl)
+            const convData = await convResp.json()
+            
+            if (convData.id) {
+                console.log(`[getConversationTags] conversation found, participants: ${convData.participants?.data?.length || 0}`)
+                // Log the structure to understand what data we have
+                if (convData.participants?.data) {
+                    convData.participants.data.forEach((p: any, i: number) => {
+                        if (i < 3) console.log(`[getConversationTags] participant ${i}:`, { id: p.id, name: p.name, email: p.email })
+                    })
+                }
+            }
+        } catch (err) {
+            console.error(`[getConversationTags] conversation metadata fetch failed:`, err instanceof Error ? err.message : String(err))
         }
 
-        if (!targetConversation.label_names || !Array.isArray(targetConversation.label_names)) {
-            console.log(`[getConversationTags] no labels found for conversation`)
-            return []
+        // Fallback: try to fetch conversation labels from page
+        try {
+            const conversationsUrl = `https://graph.facebook.com/v21.0/${pageId}/conversations?fields=id,label_names&limit=100&access_token=${token}`
+            
+            const convResp = await fetch(conversationsUrl)
+            const convData = await convResp.json()
+            
+            if (convData.data && Array.isArray(convData.data)) {
+                const normalizedSearchId = conversationId.replace(/^t_/, '')
+                const targetConversation = convData.data.find((conv: any) => {
+                    const convId = conv.id.replace(/^t_/, '')
+                    return conv.id === conversationId || convId === normalizedSearchId
+                })
+
+                if (targetConversation?.label_names && Array.isArray(targetConversation.label_names) && targetConversation.label_names.length > 0) {
+                    console.log(`[getConversationTags] found ${targetConversation.label_names.length} labels`)
+                    tags = [...tags, ...targetConversation.label_names]
+                } else {
+                    console.log(`[getConversationTags] conversation has no labels`)
+                }
+            }
+        } catch (err) {
+            console.error(`[getConversationTags] labels fetch failed:`, err instanceof Error ? err.message : String(err))
         }
 
-        console.log(`[getConversationTags] found ${targetConversation.label_names.length} labels:`, targetConversation.label_names)
-        return targetConversation.label_names
+        console.log(`[getConversationTags] returning ${tags.length} total tag(s)`)
+        return tags
     } catch (err) {
         console.error(`[getConversationTags] unexpected error:`, err instanceof Error ? err.message : String(err))
         return []
