@@ -784,6 +784,11 @@ export async function getConversationTags(
                 const messResp = await fetch(url)
                 const messData = await messResp.json()
                 
+                // Log first message raw data for debugging
+                if (pageCount === 1 && messData.data && messData.data.length > 0) {
+                    console.log(`[getConversationTags] Raw first message:`, JSON.stringify(messData.data[0], null, 2).slice(0, 800))
+                }
+                
                 if (messData.data && Array.isArray(messData.data) && messData.data.length > 0) {
                     allMessages = [...allMessages, ...messData.data]
                     console.log(`[getConversationTags] fetched page ${pageCount}: ${messData.data.length} messages (total: ${allMessages.length})`)
