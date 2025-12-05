@@ -760,58 +760,78 @@ export async function getConversationTags(
             console.error(`[getConversationTags] labels endpoint error:`, err instanceof Error ? err.message : 'unknown')
         }
 
-        // Method 4: Get messages and extract any ad/campaign info from referral or other fields
+        // Method 4: Get ALL messages and extract any ad/campaign info from referral or other fields
         try {
-            // Try with all possible fields that might contain campaign/ad info
-            const messUrl = `https://graph.facebook.com/v21.0/${conversationId}/messages?fields=id,message,from,referral,tags,created_time,subject,message_tags,type,story&limit=30&access_token=${token}`
-            const messResp = await fetch(messUrl)
-            const messData = await messResp.json()
+            // Use getAllConversationMessages for complete pagination
+            console.log(`[getConversationTags] Method 4: fetching ALL messages with pagination`)
             
-            if (messData.data && Array.isArray(messData.data)) {
-                console.log(`[getConversationTags] fetched ${messData.data.length} messages`)
+            let allMessages: any[] = []
+            let after: string | undefined = undefined
+            let hasMore = true
+            let pageCount = 0
+            
+            while (hasMore && pageCount < 100) { // Max 100 pages to prevent infinite loops
+                pageCount++
                 
-                // Check for referral ad_id
-                const adIds = new Set<string>()
-                const campaignTags = new Set<string>()
+                let url = `https://graph.facebook.com/v21.0/${conversationId}/messages?` +
+                    `fields=id,message,from,referral,tags,created_time,subject,message_tags,type,story&` +
+                    `limit=100&access_token=${token}`
                 
-                messData.data.forEach((m: any, idx: number) => {
-                    const msgKeys = Object.keys(m).filter(k => k !== 'id' && k !== 'message')
-                    console.log(`[getConversationTags] message ${idx} keys:`, msgKeys)
-                    
-                    // Log full message object to see all available fields
-                    if (idx === 0) {
-                        console.log(`[getConversationTags] message ${idx} full data:`, JSON.stringify(m, null, 2).slice(0, 500))
-                    }
-                    
-                    if (m.referral) {
-                        console.log(`[getConversationTags] message ${idx} referral:`, m.referral)
-                        if (m.referral.ad_id) {
-                            adIds.add(`ad_id:${m.referral.ad_id}`)
-                        }
-                    }
-                    
-                    // Check for messenger_tags (nested in tags field)
-                    if (m.tags && typeof m.tags === 'object') {
-                        console.log(`[getConversationTags] message ${idx} tags object:`, m.tags)
-                        if (m.tags.data && Array.isArray(m.tags.data)) {
-                            m.tags.data.forEach((t: any) => {
-                                if (t.name) campaignTags.add(t.name)
-                            })
-                        }
-                    }
-                })
-                
-                if (adIds.size > 0) {
-                    console.log(`[getConversationTags] found ${adIds.size} ad_ids from messages`)
-                    allTags = [...allTags, ...Array.from(adIds)]
+                if (after) {
+                    url += `&after=${after}`
                 }
-                if (campaignTags.size > 0) {
-                    console.log(`[getConversationTags] found ${campaignTags.size} campaign tags from messages`)
-                    allTags = [...allTags, ...Array.from(campaignTags)]
+                
+                const messResp = await fetch(url)
+                const messData = await messResp.json()
+                
+                if (messData.data && Array.isArray(messData.data) && messData.data.length > 0) {
+                    allMessages = [...allMessages, ...messData.data]
+                    console.log(`[getConversationTags] fetched page ${pageCount}: ${messData.data.length} messages (total: ${allMessages.length})`)
+                    
+                    if (messData.paging?.cursors?.after) {
+                        after = messData.paging.cursors.after
+                    } else {
+                        hasMore = false
+                    }
+                } else {
+                    hasMore = false
                 }
             }
+            
+            console.log(`[getConversationTags] finished pagination - total messages: ${allMessages.length}`)
+            
+            // Process all messages for ad_id
+            const adIds = new Set<string>()
+            const campaignTags = new Set<string>()
+            
+            allMessages.forEach((m: any, idx: number) => {
+                if (m.referral) {
+                    if (m.referral.ad_id) {
+                        console.log(`[getConversationTags] message ${idx} has ad_id:`, m.referral.ad_id)
+                        adIds.add(`ad_id:${m.referral.ad_id}`)
+                    }
+                }
+                
+                // Check for messenger_tags (nested in tags field)
+                if (m.tags && typeof m.tags === 'object') {
+                    if (m.tags.data && Array.isArray(m.tags.data)) {
+                        m.tags.data.forEach((t: any) => {
+                            if (t.name) campaignTags.add(t.name)
+                        })
+                    }
+                }
+            })
+            
+            if (adIds.size > 0) {
+                console.log(`[getConversationTags] found ${adIds.size} unique ad_ids from all messages`)
+                allTags = [...allTags, ...Array.from(adIds)]
+            }
+            if (campaignTags.size > 0) {
+                console.log(`[getConversationTags] found ${campaignTags.size} campaign tags from messages`)
+                allTags = [...allTags, ...Array.from(campaignTags)]
+            }
         } catch (err) {
-            console.error(`[getConversationTags] messages error:`, err instanceof Error ? err.message : 'unknown')
+            console.error(`[getConversationTags] messages pagination error:`, err instanceof Error ? err.message : 'unknown')
         }
 
         // Method 5: Fetch all labels from page and match by label assignment
