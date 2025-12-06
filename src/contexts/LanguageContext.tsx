@@ -32,13 +32,15 @@ const LanguageContext = createContext<LanguageContextType | undefined>(undefined
 export function LanguageProvider({ children }: { children: React.ReactNode }) {
     const [language, setLanguage] = useState<Language>('en')
     const [timezone, setTimezoneState] = useState<string>('auto')
+    const [mounted, setMounted] = useState(false)
 
     useEffect(() => {
-        const savedLanguage = localStorage.getItem('language') as Language
+        setMounted(true)
+        const savedLanguage = localStorage.getItem('laroun-language') as Language
         if (savedLanguage && (savedLanguage === 'en' || savedLanguage === 'th')) {
             setLanguage(savedLanguage)
         }
-        const savedTimezone = localStorage.getItem('timezone')
+        const savedTimezone = localStorage.getItem('laroun-timezone')
         if (savedTimezone) {
             setTimezoneState(savedTimezone)
         }
@@ -46,12 +48,12 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
 
     const handleSetLanguage = (lang: Language) => {
         setLanguage(lang)
-        localStorage.setItem('language', lang)
+        localStorage.setItem('laroun-language', lang)
     }
 
     const handleSetTimezone = (tz: string) => {
         setTimezoneState(tz)
-        localStorage.setItem('timezone', tz)
+        localStorage.setItem('laroun-timezone', tz)
     }
 
     // Get the actual IANA timezone string
@@ -91,22 +93,22 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
         const d = new Date(date)
         const now = new Date()
         const tz = getIANATimezone()
-        
+
         // Get dates in target timezone
         const dateInTz = new Date(d.toLocaleString('en-US', { timeZone: tz }))
         const nowInTz = new Date(now.toLocaleString('en-US', { timeZone: tz }))
-        
+
         // Check if same day
         const isToday = dateInTz.toDateString() === nowInTz.toDateString()
-        
+
         // Check if yesterday
         const yesterday = new Date(nowInTz)
         yesterday.setDate(yesterday.getDate() - 1)
         const isYesterday = dateInTz.toDateString() === yesterday.toDateString()
-        
+
         // Check if this year
         const isThisYear = dateInTz.getFullYear() === nowInTz.getFullYear()
-        
+
         if (isToday) {
             // Show time: 17:14
             return d.toLocaleTimeString(language === 'th' ? 'th-TH' : 'en-US', {
@@ -116,11 +118,11 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
                 timeZone: tz
             })
         }
-        
+
         if (isYesterday) {
             return language === 'th' ? 'เมื่อวาน' : 'Yesterday'
         }
-        
+
         // Show date: 30 Sep or 30 ก.ย.
         if (isThisYear) {
             return d.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
@@ -129,7 +131,7 @@ export function LanguageProvider({ children }: { children: React.ReactNode }) {
                 timeZone: tz
             })
         }
-        
+
         // Show full date with year: 30 Sep 2024
         return d.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
             day: 'numeric',

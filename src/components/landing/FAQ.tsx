@@ -7,7 +7,7 @@ export default function FAQ() {
     const faqs = [
         {
             question: "How does the free trial work?",
-            answer: "You can try Laroun free for 14 days. No credit card is required to start. You'll get full access to all features in the Pro plan during your trial."
+            answer: "You can try GATE169 free for 14 days. No credit card is required to start. You'll get full access to all features in the Pro plan during your trial."
         },
         {
             question: "Can I cancel my subscription anytime?",

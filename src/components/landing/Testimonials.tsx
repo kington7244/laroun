@@ -9,7 +9,7 @@ export default function Testimonials() {
             role: "Marketing Director",
             company: "TechFlow",
             image: "https://images.unsplash.com/photo-1494790108377-be9c29b29330?auto=format&fit=crop&q=80&w=150&h=150",
-            content: "Laroun has completely transformed how we handle our Facebook campaigns. The automated optimization alone has saved us countless hours and improved our ROI by 40%."
+            content: "GATE169 has completely transformed how we handle our Facebook campaigns. The automated optimization alone has saved us countless hours and improved our ROI by 40%."
         },
         {
             name: "Michael Chen",
@@ -23,7 +23,7 @@ export default function Testimonials() {
             role: "Agency Owner",
             company: "Creative Digital",
             image: "https://images.unsplash.com/photo-1438761681033-6461ffad8d80?auto=format&fit=crop&q=80&w=150&h=150",
-            content: "Managing multiple client accounts used to be a nightmare. With Laroun, we've streamlined our workflow and can scale our agency without adding more headcount."
+            content: "Managing multiple client accounts used to be a nightmare. With GATE169, we've streamlined our workflow and can scale our agency without adding more headcount."
         }
     ]
 
@@ -36,7 +36,7 @@ export default function Testimonials() {
                         Loved by marketing teams
                     </h3>
                     <p className="text-xl text-gray-600">
-                        See what our customers have to say about their experience with Laroun.
+                        See what our customers have to say about their experience with GATE169.
                     </p>
                 </div>
 

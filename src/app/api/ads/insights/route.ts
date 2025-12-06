@@ -92,6 +92,7 @@ export async function GET(req: Request) {
                         'reach',
                         'actions',
                         'cost_per_action_type',
+                        'video_play_actions',
                         'video_avg_time_watched_actions',
                         'video_p25_watched_actions',
                         'video_p50_watched_actions',
@@ -109,27 +110,25 @@ export async function GET(req: Request) {
                 }
 
                 console.log(`Insights for ${id} (${level}): Found ${allInsights.length} records`)
-                if (allInsights.length > 0) {
-                    console.log(`First Insight Item:`, JSON.stringify(allInsights[0], null, 2))
-                }
 
                 return allInsights.map((i: any) => {
                     const mappedId = i[level + '_id'] || i.account_id
-                    // console.log(`Mapping ${level} ID: ${mappedId} (Raw: ${i[level + '_id']})`)
+
                     return {
-                        id: mappedId, // Fallback
+                        id: mappedId,
                         spend: i.spend,
                         impressions: i.impressions,
                         clicks: i.clicks,
                         reach: i.reach,
                         actions: i.actions,
                         costPerActionType: i.cost_per_action_type,
-                        videoAvgTimeWatched: i.video_avg_time_watched_actions,
-                        videoP25Watched: i.video_p25_watched_actions,
-                        videoP50Watched: i.video_p50_watched_actions,
-                        videoP75Watched: i.video_p75_watched_actions,
-                        videoP95Watched: i.video_p95_watched_actions,
-                        videoP100Watched: i.video_p100_watched_actions,
+                        videoAvgTimeWatched: i.video_avg_time_watched_actions?.[0]?.value,
+                        videoPlays: i.video_play_actions?.[0]?.value,
+                        videoP25Watched: i.video_p25_watched_actions?.[0]?.value,
+                        videoP50Watched: i.video_p50_watched_actions?.[0]?.value,
+                        videoP75Watched: i.video_p75_watched_actions?.[0]?.value,
+                        videoP95Watched: i.video_p95_watched_actions?.[0]?.value,
+                        videoP100Watched: i.video_p100_watched_actions?.[0]?.value,
                     }
                 })
             })

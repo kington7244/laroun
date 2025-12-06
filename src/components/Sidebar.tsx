@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, Wallet, CreditCard, BarChart3, Megaphone, Receipt, MessageCircle } from "lucide-react"
+import { LayoutDashboard, Settings, LogOut, ChevronLeft, ChevronRight, Megaphone, Receipt, MessageCircle, FileSpreadsheet } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { signOut } from "next-auth/react"
 import { useLanguage } from "@/contexts/LanguageContext"
@@ -22,10 +22,8 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
         { name: t.common.dashboard, href: "/dashboard", icon: LayoutDashboard },
         { name: t.common.adManager, href: "/admanager", icon: Megaphone },
         { name: "AdBox", href: "/adbox", icon: MessageCircle },
+        { name: "Google Sheets", href: "/google-sheets", icon: FileSpreadsheet },
         { name: t.common.payments, href: "/payments", icon: Receipt },
-        { name: t.common.assets, href: "/assets", icon: Wallet },
-        { name: t.common.cards, href: "/cards", icon: CreditCard },
-        { name: t.common.reports, href: "/reports", icon: BarChart3 },
         { name: t.common.settings, href: "/settings", icon: Settings },
     ]
 
@@ -45,7 +43,8 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
             <div className="flex-1 overflow-y-auto py-4">
                 <nav className="px-2 space-y-1">
                     {navigation.map((item) => {
-                        const isActive = pathname.startsWith(item.href)
+                        // Exact match or sub-path match (e.g. /admanager/123 matches /admanager, but /admanager-team does not)
+                        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`)
                         return (
                             <Link
                                 key={item.href}

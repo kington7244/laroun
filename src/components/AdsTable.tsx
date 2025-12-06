@@ -12,7 +12,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { RefreshCw, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Search, MoreHorizontal, X, DollarSign, Pencil, PlusCircle, LayoutGrid, Flag, Layers, Megaphone } from "lucide-react"
+import { RefreshCw, ExternalLink, ArrowUpDown, ArrowUp, ArrowDown, Search, MoreHorizontal, X, DollarSign, Pencil, PlusCircle, LayoutGrid, Flag, Layers, Megaphone, Download } from "lucide-react"
 import { Switch } from "@/components/ui/switch"
 import { toast } from "sonner"
 import { useLanguage } from "@/contexts/LanguageContext"
@@ -44,6 +44,7 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select"
+
 
 // Helper for Payment Icons
 const PaymentMethodCell = ({ value }: { value: string }) => {
@@ -279,6 +280,13 @@ export default function AdsTable() {
     const [newSpendingLimit, setNewSpendingLimit] = useState('')
     const [isUpdatingLimit, setIsUpdatingLimit] = useState(false)
 
+    // Export Dialog state
+    const [exportDialogOpen, setExportDialogOpen] = useState(false)
+    const [isExporting, setIsExporting] = useState(false)
+
+    // Google Sheets Config Dialog state
+
+
     // Track what we've already fetched to prevent duplicate fetches (ref declared here, used in useEffects below)
     const lastFetchRef = useRef<string | null>(null)
 
@@ -386,7 +394,7 @@ export default function AdsTable() {
                 throw new Error(errorData.error || "Failed to fetch basic data")
             }
             const basicData = await basicRes.json()
-            
+
             console.log(`[${type}] Basic data:`, basicData.data?.slice(0, 2))
 
             // Handle empty or undefined data
@@ -418,12 +426,13 @@ export default function AdsTable() {
                     reach: insight?.reach || 0,
                     actions: insight?.actions || [],
                     costPerActionType: insight?.costPerActionType || [],
-                    videoAvgTimeWatched: insight?.videoAvgTimeWatched || [],
-                    videoP25Watched: insight?.videoP25Watched || [],
-                    videoP50Watched: insight?.videoP50Watched || [],
-                    videoP75Watched: insight?.videoP75Watched || [],
-                    videoP95Watched: insight?.videoP95Watched || [],
-                    videoP100Watched: insight?.videoP100Watched || [],
+                    videoAvgTimeWatched: insight?.videoAvgTimeWatched || 0,
+                    videoPlays: insight?.videoPlays || 0,
+                    videoP25Watched: insight?.videoP25Watched || 0,
+                    videoP50Watched: insight?.videoP50Watched || 0,
+                    videoP75Watched: insight?.videoP75Watched || 0,
+                    videoP95Watched: insight?.videoP95Watched || 0,
+                    videoP100Watched: insight?.videoP100Watched || 0,
                 }
             })
             setData(mergedData)
@@ -438,66 +447,66 @@ export default function AdsTable() {
     // Fetch accounts data - only depends on activeTab and date
     useEffect(() => {
         if (activeTab !== 'accounts') return
-        
-        const dateKey = date?.from && date?.to 
-            ? `${date.from.toISOString()}-${date.to.toISOString()}` 
+
+        const dateKey = date?.from && date?.to
+            ? `${date.from.toISOString()}-${date.to.toISOString()}`
             : 'no-date'
         const fetchKey = `accounts-${dateKey}`
-        
+
         if (lastFetchRef.current === fetchKey) return
         lastFetchRef.current = fetchKey
         fetchData('accounts', {})
     }, [activeTab, date])
-    
+
     // Fetch campaigns data - depends on activeTab, date, and account selection
     useEffect(() => {
         if (activeTab !== 'campaigns') return
-        
+
         const accountIds = checkedAccountIds.length > 0 ? checkedAccountIds : selectedAccountIds
         if (accountIds.length === 0) return
-        
-        const dateKey = date?.from && date?.to 
-            ? `${date.from.toISOString()}-${date.to.toISOString()}` 
+
+        const dateKey = date?.from && date?.to
+            ? `${date.from.toISOString()}-${date.to.toISOString()}`
             : 'no-date'
         const fetchKey = `campaigns-${dateKey}-${accountIds.join(',')}`
-        
+
         if (lastFetchRef.current === fetchKey) return
         lastFetchRef.current = fetchKey
         fetchData('campaigns', { accountIds })
     }, [activeTab, date, selectedAccountIds, checkedAccountIds])
-    
+
     // Fetch adsets data - depends on activeTab, date, account selection, and campaign selection
     useEffect(() => {
         if (activeTab !== 'adsets') return
-        
+
         const accountIds = checkedAccountIds.length > 0 ? checkedAccountIds : selectedAccountIds
         if (accountIds.length === 0) return
-        
+
         const campaignIds = checkedCampaignIds
-        const dateKey = date?.from && date?.to 
-            ? `${date.from.toISOString()}-${date.to.toISOString()}` 
+        const dateKey = date?.from && date?.to
+            ? `${date.from.toISOString()}-${date.to.toISOString()}`
             : 'no-date'
         const fetchKey = `adsets-${dateKey}-${accountIds.join(',')}-${campaignIds.join(',')}`
-        
+
         if (lastFetchRef.current === fetchKey) return
         lastFetchRef.current = fetchKey
         fetchData('adsets', { accountIds, campaignIds })
     }, [activeTab, date, selectedAccountIds, checkedAccountIds, checkedCampaignIds])
-    
+
     // Fetch ads data - depends on all selections
     useEffect(() => {
         if (activeTab !== 'ads') return
-        
+
         const accountIds = checkedAccountIds.length > 0 ? checkedAccountIds : selectedAccountIds
         if (accountIds.length === 0) return
-        
+
         const campaignIds = checkedCampaignIds
         const adSetIds = checkedAdSetIds
-        const dateKey = date?.from && date?.to 
-            ? `${date.from.toISOString()}-${date.to.toISOString()}` 
+        const dateKey = date?.from && date?.to
+            ? `${date.from.toISOString()}-${date.to.toISOString()}`
             : 'no-date'
         const fetchKey = `ads-${dateKey}-${accountIds.join(',')}-${campaignIds.join(',')}-${adSetIds.join(',')}`
-        
+
         if (lastFetchRef.current === fetchKey) return
         lastFetchRef.current = fetchKey
         fetchData('ads', { accountIds, campaignIds, adSetIds })
@@ -530,40 +539,40 @@ export default function AdsTable() {
 
     const setCurrentSelection = (newSelection: string[]) => {
         switch (activeTab) {
-            case 'accounts': 
+            case 'accounts':
                 setCheckedAccountIds(newSelection)
                 // Clear all child selections when accounts change
                 setCheckedCampaignIds([])
                 setCheckedAdSetIds([])
                 setCheckedAdIds([])
-                updateUrl({ 
+                updateUrl({
                     checkedAccounts: newSelection,
                     checkedCampaigns: [],
                     checkedAdSets: [],
                     checkedAds: []
                 })
                 break
-            case 'campaigns': 
+            case 'campaigns':
                 setCheckedCampaignIds(newSelection)
                 // Clear child selections when campaigns change
                 setCheckedAdSetIds([])
                 setCheckedAdIds([])
-                updateUrl({ 
+                updateUrl({
                     checkedCampaigns: newSelection,
                     checkedAdSets: [],
                     checkedAds: []
                 })
                 break
-            case 'adsets': 
+            case 'adsets':
                 setCheckedAdSetIds(newSelection)
                 // Clear child selections when adsets change
                 setCheckedAdIds([])
-                updateUrl({ 
+                updateUrl({
                     checkedAdSets: newSelection,
                     checkedAds: []
                 })
                 break
-            case 'ads': 
+            case 'ads':
                 setCheckedAdIds(newSelection)
                 updateUrl({ checkedAds: newSelection })
                 break
@@ -579,15 +588,25 @@ export default function AdsTable() {
     }
 
     const getActionValue = (actions: any[], type: string) => {
-        if (!actions) return 0
+        if (!actions || !Array.isArray(actions)) return 0
         const action = actions.find((a: any) => a.action_type === type)
         return action ? parseFloat(action.value) : 0
+    }
+
+    const hasActionType = (actions: any[], type: string) => {
+        if (!actions) return false
+        return actions.some((a: any) => a.action_type === type)
     }
 
     const getCostPerAction = (costs: any[], type: string) => {
         if (!costs) return 0
         const cost = costs.find((c: any) => c.action_type === type)
         return cost ? parseFloat(cost.value) : 0
+    }
+
+    const hasCostType = (costs: any[], type: string) => {
+        if (!costs) return false
+        return costs.some((c: any) => c.action_type === type)
     }
 
     const formatCurrency = (value: number, currency: string) => {
@@ -609,35 +628,35 @@ export default function AdsTable() {
 
     // Toggle On/Off status for campaigns, adsets, ads
     const [togglingIds, setTogglingIds] = useState<Set<string>>(new Set())
-    
+
     const handleToggleStatus = async (item: any, e: React.MouseEvent) => {
         e.stopPropagation()
-        
+
         const type = activeTab === 'campaigns' ? 'campaign' : activeTab === 'adsets' ? 'adset' : 'ad'
         const newStatus = item.status === 'ACTIVE' ? 'PAUSED' : 'ACTIVE'
-        
+
         setTogglingIds(prev => new Set(prev).add(item.id))
-        
+
         try {
             const res = await fetch('/api/ads/toggle-status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ id: item.id, type, status: newStatus })
             })
-            
+
             const result = await res.json()
-            
+
             if (!res.ok) {
                 throw new Error(result.error || 'Failed to update status')
             }
-            
+
             // Update local data
-            setData(prev => prev.map(d => 
-                d.id === item.id 
+            setData(prev => prev.map(d =>
+                d.id === item.id
                     ? { ...d, status: newStatus, effectiveStatus: newStatus, deliveryStatus: newStatus === 'PAUSED' ? (type === 'campaign' ? 'CAMPAIGN_OFF' : type === 'adset' ? 'ADSET_OFF' : 'AD_OFF') : 'ACTIVE' }
                     : d
             ))
-            
+
             toast.success(`${type.charAt(0).toUpperCase() + type.slice(1)} ${newStatus === 'ACTIVE' ? 'activated' : 'paused'}`)
         } catch (error: any) {
             console.error('Error toggling status:', error)
@@ -648,6 +667,224 @@ export default function AdsTable() {
                 next.delete(item.id)
                 return next
             })
+        }
+    }
+
+    // Get export data helper
+    const getExportData = () => {
+        let headers: string[] = []
+        let rows: string[][] = []
+
+        if (activeTab === 'accounts') {
+            headers = ['#', 'Name', 'ID', 'Status', 'Active Ads', 'Spending Cap', 'Payment Method', 'Timezone', 'Country', 'Currency']
+            rows = sortedData.map((item, index) => [
+                String(index + 1),
+                item.name || '',
+                item.id || '',
+                item.deliveryStatus || item.status || '',
+                String(item.activeAdsCount || 0),
+                item.spendCap ? (parseFloat(item.spendCap) / 100).toFixed(2) : '',
+                item.paymentMethod || '',
+                item.timezone || '',
+                item.country || '',
+                item.currency || ''
+            ])
+        } else {
+            headers = [
+                '#', 'Name', 'ID', 'Status', 'Delivery', 'Results', 'Cost Per Result',
+                'Budget', 'Impressions', 'Reach', 'Post Engagements', 'Clicks',
+                'New Messaging Contacts', 'Amount Spent', 'Cost Per New Messaging Contact'
+            ]
+
+            rows = sortedData.map((item, index) => {
+                const objective = item.objective?.toUpperCase() || ''
+                const messagingResult = getActionValue(item.actions, 'onsite_conversion.messaging_conversation_started_7d')
+                const messagingFirstReply = getActionValue(item.actions, 'onsite_conversion.messaging_first_reply')
+                const messagingCost = getCostPerAction(item.costPerActionType, 'onsite_conversion.messaging_conversation_started_7d')
+                const messagingFirstReplyCost = getCostPerAction(item.costPerActionType, 'onsite_conversion.messaging_first_reply')
+
+                let results = ''
+                let costPerResult = ''
+
+                if (objective === 'OUTCOME_ENGAGEMENT' || objective === 'MESSAGES') {
+                    results = messagingResult > 0 ? String(messagingResult) : (messagingFirstReply > 0 ? String(messagingFirstReply) : '0')
+                    costPerResult = messagingCost > 0 ? messagingCost.toFixed(2) : (messagingFirstReplyCost > 0 ? messagingFirstReplyCost.toFixed(2) : '')
+                } else {
+                    const postEng = getActionValue(item.actions, 'post_engagement')
+                    results = postEng > 0 ? String(postEng) : ''
+                    const postEngCost = getCostPerAction(item.costPerActionType, 'post_engagement')
+                    costPerResult = postEngCost > 0 ? postEngCost.toFixed(2) : ''
+                }
+
+                return [
+                    String(index + 1),
+                    item.name || '',
+                    item.id || '',
+                    item.status || '',
+                    item.deliveryStatus || item.effectiveStatus || '',
+                    results,
+                    costPerResult,
+                    item.budget ? (parseFloat(item.budget) / 100).toFixed(2) : (item.dailyBudget ? (parseFloat(item.dailyBudget) / 100).toFixed(2) : ''),
+                    String(item.impressions || ''),
+                    String(item.reach || ''),
+                    String(item.postEngagements || ''),
+                    String(item.clicks || ''),
+                    String(item.newMessagingContacts || ''),
+                    item.spend ? parseFloat(item.spend).toFixed(2) : '',
+                    item.costPerNewMessagingContact ? parseFloat(item.costPerNewMessagingContact).toFixed(2) : ''
+                ]
+            })
+        }
+
+        return { headers, rows }
+    }
+
+    // Open export dialog
+    const handleExportClick = () => {
+        if (sortedData.length === 0) {
+            toast.error(t.common.noResults)
+            return
+        }
+        setExportDialogOpen(true)
+    }
+
+    // Export to CSV
+    const exportToCSV = () => {
+        setIsExporting(true)
+        try {
+            const { headers, rows } = getExportData()
+
+            const BOM = '\uFEFF'
+            const csvContent = BOM + headers.join(',') + '\n' + rows.map(row =>
+                row.map(cell => {
+                    const escaped = String(cell).replace(/"/g, '""')
+                    return escaped.includes(',') || escaped.includes('"') || escaped.includes('\n')
+                        ? `"${escaped}"`
+                        : escaped
+                }).join(',')
+            ).join('\n')
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+            const link = document.createElement('a')
+            const url = URL.createObjectURL(blob)
+            link.setAttribute('href', url)
+
+            const date = new Date().toISOString().split('T')[0]
+            const tabName = activeTab === 'accounts' ? 'Accounts' : activeTab === 'campaigns' ? 'Campaigns' : activeTab === 'adsets' ? 'Ad_Sets' : 'Ads'
+            link.setAttribute('download', `${tabName}_${date}.csv`)
+
+            link.style.visibility = 'hidden'
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+
+            toast.success(`ส่งออก ${sortedData.length} รายการเป็น CSV สำเร็จ`)
+            setExportDialogOpen(false)
+        } catch (error) {
+            toast.error('เกิดข้อผิดพลาดในการส่งออก')
+        } finally {
+            setIsExporting(false)
+        }
+    }
+
+    // Export to Excel (.xlsx)
+    const exportToExcel = async () => {
+        setIsExporting(true)
+        try {
+            const { headers, rows } = getExportData()
+
+            // Create Excel XML format (compatible without external libraries)
+            let excelContent = `<?xml version="1.0" encoding="UTF-8"?>
+<?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet"
+ xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+<Worksheet ss:Name="Data">
+<Table>
+<Row>`
+
+            // Add headers
+            headers.forEach(header => {
+                excelContent += `<Cell><Data ss:Type="String">${escapeXml(header)}</Data></Cell>`
+            })
+            excelContent += `</Row>`
+
+            // Add data rows
+            rows.forEach(row => {
+                excelContent += `<Row>`
+                row.forEach((cell, index) => {
+                    // Check if it's a number column (skip first column which is #, and name/id columns)
+                    const isNumeric = index > 2 && !isNaN(parseFloat(cell)) && cell !== ''
+                    if (isNumeric) {
+                        excelContent += `<Cell><Data ss:Type="Number">${cell}</Data></Cell>`
+                    } else {
+                        excelContent += `<Cell><Data ss:Type="String">${escapeXml(cell)}</Data></Cell>`
+                    }
+                })
+                excelContent += `</Row>`
+            })
+
+            excelContent += `</Table></Worksheet></Workbook>`
+
+            const blob = new Blob([excelContent], { type: 'application/vnd.ms-excel' })
+            const link = document.createElement('a')
+            const url = URL.createObjectURL(blob)
+            link.setAttribute('href', url)
+
+            const date = new Date().toISOString().split('T')[0]
+            const tabName = activeTab === 'accounts' ? 'Accounts' : activeTab === 'campaigns' ? 'Campaigns' : activeTab === 'adsets' ? 'Ad_Sets' : 'Ads'
+            link.setAttribute('download', `${tabName}_${date}.xls`)
+
+            link.style.visibility = 'hidden'
+            document.body.appendChild(link)
+            link.click()
+            document.body.removeChild(link)
+
+            toast.success(`ส่งออก ${sortedData.length} รายการเป็น Excel สำเร็จ`)
+            setExportDialogOpen(false)
+        } catch (error) {
+            toast.error('เกิดข้อผิดพลาดในการส่งออก')
+        } finally {
+            setIsExporting(false)
+        }
+    }
+
+    // Helper to escape XML special characters
+    const escapeXml = (str: string) => {
+        return String(str)
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;')
+    }
+
+    // Export to Google Sheets (copy to clipboard in TSV format)
+    const exportToGoogleSheets = () => {
+        setIsExporting(true)
+        try {
+            const { headers, rows } = getExportData()
+
+            // Create TSV (Tab Separated Values) - perfect for pasting into Google Sheets
+            const tsvContent = headers.join('\t') + '\n' + rows.map(row => row.join('\t')).join('\n')
+
+            navigator.clipboard.writeText(tsvContent).then(() => {
+                toast.success(
+                    <div className="flex flex-col gap-1">
+                        <span className="font-medium">คัดลอกข้อมูลแล้ว!</span>
+                        <span className="text-sm">เปิด Google Sheets แล้วกด Ctrl+V เพื่อวาง</span>
+                    </div>
+                )
+                setExportDialogOpen(false)
+
+                // Open Google Sheets in new tab
+                window.open('https://sheets.new', '_blank')
+            }).catch(() => {
+                toast.error('ไม่สามารถคัดลอกข้อมูลได้')
+            })
+        } catch (error) {
+            toast.error('เกิดข้อผิดพลาด')
+        } finally {
+            setIsExporting(false)
         }
     }
 
@@ -670,13 +907,13 @@ export default function AdsTable() {
 
     const handleSpendingLimitSubmit = async () => {
         if (!selectedAccountForLimit) return
-        
+
         // Validation
         if (spendingLimitAction === 'change' && (!newSpendingLimit || parseFloat(newSpendingLimit) <= 0)) {
             toast.error('Please enter a valid spending limit')
             return
         }
-        
+
         setIsUpdatingLimit(true)
         try {
             const response = await fetch('/api/ads/spending-limit', {
@@ -704,7 +941,7 @@ export default function AdsTable() {
             } else {
                 toast.success(`Spending limit updated to ${newSpendingLimit} ${selectedAccountForLimit.currency} for ${selectedAccountForLimit.name}`)
             }
-            
+
             setSpendingLimitDialogOpen(false)
             // Refresh data
             lastFetchRef.current = null
@@ -719,31 +956,31 @@ export default function AdsTable() {
 
     const filteredData = data.filter(item => {
         // Search filter
-        const matchesSearch = !searchQuery || 
-            item.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        const matchesSearch = !searchQuery ||
+            item.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
             item.id?.includes(searchQuery)
-        
+
         // Status filter - only apply to non-accounts tabs
         if (activeTab === 'accounts') {
             return matchesSearch
         }
-        
+
         const status = (item.deliveryStatus || item.effectiveStatus || item.status || '').toUpperCase()
         let matchesStatus = true
-        
+
         if (statusFilter === 'active') {
             matchesStatus = status === 'ACTIVE'
         } else if (statusFilter === 'inactive') {
-            matchesStatus = ['PAUSED', 'INACTIVE', 'CAMPAIGN_OFF', 'CAMPAIGN_PAUSED', 
-                            'ADSET_OFF', 'ADSET_PAUSED', 'AD_OFF', 'ADS_OFF', 
-                            'ADSETS_INACTIVE', 'ADS_INACTIVE', 'NO_ADS', 'NO_ADSETS',
-                            'DELETED', 'ARCHIVED'].includes(status)
+            matchesStatus = ['PAUSED', 'INACTIVE', 'CAMPAIGN_OFF', 'CAMPAIGN_PAUSED',
+                'ADSET_OFF', 'ADSET_PAUSED', 'AD_OFF', 'ADS_OFF',
+                'ADSETS_INACTIVE', 'ADS_INACTIVE', 'NO_ADS', 'NO_ADSETS',
+                'DELETED', 'ARCHIVED'].includes(status)
         } else if (statusFilter === 'error') {
-            matchesStatus = ['ERROR', 'DISABLED', 'ACCOUNT_DISABLED', 'DISAPPROVED', 
-                            'WITH_ISSUES', 'NOT_DELIVERING', 'SPEND_LIMIT_REACHED',
-                            'PENDING_BILLING_INFO'].includes(status)
+            matchesStatus = ['ERROR', 'DISABLED', 'ACCOUNT_DISABLED', 'DISAPPROVED',
+                'WITH_ISSUES', 'NOT_DELIVERING', 'SPEND_LIMIT_REACHED',
+                'PENDING_BILLING_INFO'].includes(status)
         }
-        
+
         return matchesSearch && matchesStatus
     })
 
@@ -780,30 +1017,121 @@ export default function AdsTable() {
         return priorities[status?.toUpperCase()] || 99
     }
 
+    // Helper to get numeric value for sorting
+    const getNumericValueForSort = (item: any, key: string): number => {
+        // Direct numeric properties
+        const numericKeys = [
+            'spend', 'impressions', 'clicks', 'reach', 'activeAdsCount',
+            'spendCap', 'amountSpent', 'budget', 'postEngagements',
+            'newMessagingContacts', 'costPerNewMessagingContact',
+            'videoAvgTimeWatched', 'videoPlays', 'videoPlays3s',
+            'videoP25Watched', 'videoP50Watched', 'videoP75Watched',
+            'videoP95Watched', 'videoP100Watched'
+        ]
+
+        if (numericKeys.includes(key)) {
+            return parseFloat(item[key]) || 0
+        }
+
+        // Special handling for results - calculate from actions
+        if (key === 'results') {
+            const objective = item.objective?.toUpperCase() || ''
+            const messagingResult = getActionValue(item.actions, 'onsite_conversion.messaging_conversation_started_7d')
+            const messagingFirstReply = getActionValue(item.actions, 'onsite_conversion.messaging_first_reply')
+
+            if (objective === 'OUTCOME_ENGAGEMENT' || objective === 'MESSAGES') {
+                return messagingResult > 0 ? messagingResult : messagingFirstReply
+            }
+
+            // Try to get result based on objective
+            const objectiveToActionMap: Record<string, string[]> = {
+                'CONVERSIONS': ['offsite_conversion.fb_pixel_purchase', 'offsite_conversion.fb_pixel_lead', 'omni_purchase'],
+                'LINK_CLICKS': ['link_click'],
+                'POST_ENGAGEMENT': ['post_engagement'],
+                'VIDEO_VIEWS': ['video_view'],
+                'APP_INSTALLS': ['app_install', 'mobile_app_install'],
+                'LEAD_GENERATION': ['lead', 'leadgen.other'],
+                'REACH': ['reach'],
+                'BRAND_AWARENESS': ['reach'],
+                'TRAFFIC': ['link_click', 'landing_page_view'],
+                'ENGAGEMENT': ['post_engagement', 'page_engagement'],
+                'OUTCOME_TRAFFIC': ['link_click', 'landing_page_view'],
+                'OUTCOME_LEADS': ['lead', 'leadgen.other', 'onsite_conversion.lead_grouped'],
+                'OUTCOME_SALES': ['offsite_conversion.fb_pixel_purchase', 'omni_purchase'],
+                'OUTCOME_AWARENESS': ['reach'],
+            }
+
+            const actionTypes = objectiveToActionMap[objective] || []
+            for (const actionType of actionTypes) {
+                const val = getActionValue(item.actions, actionType)
+                if (val > 0) return val
+            }
+
+            // Fallback
+            return getActionValue(item.actions, 'post_engagement') ||
+                getActionValue(item.actions, 'link_click') || 0
+        }
+
+        // Special handling for costPerResult
+        if (key === 'costPerResult') {
+            const objective = item.objective?.toUpperCase() || ''
+            const messagingCost = getCostPerAction(item.costPerActionType, 'onsite_conversion.messaging_conversation_started_7d')
+            const messagingFirstReplyCost = getCostPerAction(item.costPerActionType, 'onsite_conversion.messaging_first_reply')
+
+            if (objective === 'OUTCOME_ENGAGEMENT' || objective === 'MESSAGES') {
+                return messagingCost > 0 ? messagingCost : messagingFirstReplyCost
+            }
+
+            // Try other costs
+            const costTypes = [
+                'offsite_conversion.fb_pixel_purchase', 'lead', 'link_click',
+                'post_engagement', 'video_view'
+            ]
+            for (const costType of costTypes) {
+                const val = getCostPerAction(item.costPerActionType, costType)
+                if (val > 0) return val
+            }
+            return 0
+        }
+
+        return 0
+    }
+
     const sortedData = [...filteredData].sort((a, b) => {
         if (!sortConfig) return 0
         const { key, direction } = sortConfig
-        
-        let aVal = a[key]
-        let bVal = b[key]
-        
+
+        let aVal: any = a[key]
+        let bVal: any = b[key]
+
         // Special handling for deliveryStatus
         if (key === 'deliveryStatus') {
             aVal = getDeliveryPriority(a.deliveryStatus || a.effectiveStatus || a.status)
             bVal = getDeliveryPriority(b.deliveryStatus || b.effectiveStatus || b.status)
         }
-        // Handle numeric values
-        else if (key === 'spend' || key === 'impressions' || key === 'clicks' || key === 'reach' || 
-                 key === 'activeAdsCount' || key === 'spendCap' || key === 'amountSpent') {
-            aVal = parseFloat(aVal) || 0
-            bVal = parseFloat(bVal) || 0
+        // Handle all numeric columns including results and costPerResult
+        else if (key === 'spend' || key === 'impressions' || key === 'clicks' || key === 'reach' ||
+            key === 'activeAdsCount' || key === 'spendCap' || key === 'amountSpent' ||
+            key === 'budget' || key === 'postEngagements' || key === 'newMessagingContacts' ||
+            key === 'costPerNewMessagingContact' || key === 'videoAvgTimeWatched' ||
+            key === 'videoPlays' || key === 'videoPlays3s' || key === 'videoP25Watched' ||
+            key === 'videoP50Watched' || key === 'videoP75Watched' || key === 'videoP95Watched' ||
+            key === 'videoP100Watched' || key === 'results' || key === 'costPerResult') {
+            aVal = getNumericValueForSort(a, key)
+            bVal = getNumericValueForSort(b, key)
         }
         // Handle string values
         else if (typeof aVal === 'string' && typeof bVal === 'string') {
             aVal = aVal.toLowerCase()
             bVal = bVal.toLowerCase()
         }
-        
+        // Handle null/undefined values - put them at the end
+        else {
+            if (aVal == null && bVal == null) return 0
+            if (aVal == null) return direction === 'asc' ? 1 : -1
+            if (bVal == null) return direction === 'asc' ? -1 : 1
+        }
+
         if (aVal < bVal) return direction === 'asc' ? -1 : 1
         if (aVal > bVal) return direction === 'asc' ? 1 : -1
         return 0
@@ -823,7 +1151,7 @@ export default function AdsTable() {
         // Use deliveryStatus (calculated) for campaigns/adsets, effectiveStatus for ads
         const status = item.deliveryStatus || item.effectiveStatus || item.status
         const statusUpper = status?.toUpperCase()?.replace(/ /g, '_')
-        
+
         // Common status configs shared across all tabs
         const commonConfig: { [key: string]: { color: string } } = {
             'ACTIVE': { color: 'bg-green-500' },
@@ -910,7 +1238,7 @@ export default function AdsTable() {
         if (sortConfig.key !== columnKey) {
             return <ArrowUpDown className="h-3 w-3 text-muted-foreground" />
         }
-        return sortConfig.direction === 'asc' 
+        return sortConfig.direction === 'asc'
             ? <ArrowUp className="h-3 w-3 text-primary" />
             : <ArrowDown className="h-3 w-3 text-primary" />
     }
@@ -933,11 +1261,10 @@ export default function AdsTable() {
                                 setSelectedAccountName(null)
                                 updateUrl({ tab: 'accounts', accountIds: [], campaignIds: [], adSetIds: [], adIds: [], accountName: null })
                             }}
-                            className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 rounded-t-xl ${
-                                activeTab === 'accounts' 
-                                    ? `${colors.active} shadow-md` 
-                                    : `${colors.inactive} border-transparent`
-                            }`}
+                            className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 rounded-t-xl ${activeTab === 'accounts'
+                                ? `${colors.active} shadow-md`
+                                : `${colors.inactive} border-transparent`
+                                }`}
                         >
                             <LayoutGrid className="w-4 h-4" />
                             <span>{t.tabs.accounts}</span>
@@ -973,13 +1300,12 @@ export default function AdsTable() {
                                 setActiveTab('campaigns')
                                 updateUrl({ tab: 'campaigns' })
                             }}
-                            className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 rounded-t-xl ${
-                                activeTab === 'campaigns' 
-                                    ? `${colors.active} shadow-md` 
-                                    : checkedAccountIds.length === 0 && selectedAccountIds.length === 0
-                                        ? 'bg-gray-50 text-gray-400 border-transparent cursor-pointer dark:bg-gray-900 dark:text-gray-600'
-                                        : `${colors.inactive} border-transparent`
-                            }`}
+                            className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 rounded-t-xl ${activeTab === 'campaigns'
+                                ? `${colors.active} shadow-md`
+                                : checkedAccountIds.length === 0 && selectedAccountIds.length === 0
+                                    ? 'bg-gray-50 text-gray-400 border-transparent cursor-pointer dark:bg-gray-900 dark:text-gray-600'
+                                    : `${colors.inactive} border-transparent`
+                                }`}
                         >
                             <Flag className="w-4 h-4" />
                             <span>{t.tabs.campaigns}</span>
@@ -1015,13 +1341,12 @@ export default function AdsTable() {
                                 setActiveTab('adsets')
                                 updateUrl({ tab: 'adsets' })
                             }}
-                            className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 rounded-t-xl ${
-                                activeTab === 'adsets' 
-                                    ? `${colors.active} shadow-md` 
-                                    : checkedAccountIds.length === 0 && selectedAccountIds.length === 0
-                                        ? 'bg-gray-50 text-gray-400 border-transparent cursor-pointer dark:bg-gray-900 dark:text-gray-600'
-                                        : `${colors.inactive} border-transparent`
-                            }`}
+                            className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 rounded-t-xl ${activeTab === 'adsets'
+                                ? `${colors.active} shadow-md`
+                                : checkedAccountIds.length === 0 && selectedAccountIds.length === 0
+                                    ? 'bg-gray-50 text-gray-400 border-transparent cursor-pointer dark:bg-gray-900 dark:text-gray-600'
+                                    : `${colors.inactive} border-transparent`
+                                }`}
                         >
                             <Layers className="w-4 h-4" />
                             <span>{t.tabs.adSets}</span>
@@ -1057,13 +1382,12 @@ export default function AdsTable() {
                                 setActiveTab('ads')
                                 updateUrl({ tab: 'ads' })
                             }}
-                            className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 rounded-t-xl ${
-                                activeTab === 'ads' 
-                                    ? `${colors.active} shadow-md` 
-                                    : checkedAccountIds.length === 0 && selectedAccountIds.length === 0
-                                        ? 'bg-gray-50 text-gray-400 border-transparent cursor-pointer dark:bg-gray-900 dark:text-gray-600'
-                                        : `${colors.inactive} border-transparent`
-                            }`}
+                            className={`flex items-center justify-center gap-2 px-4 py-3 text-sm font-medium transition-all border-b-2 rounded-t-xl ${activeTab === 'ads'
+                                ? `${colors.active} shadow-md`
+                                : checkedAccountIds.length === 0 && selectedAccountIds.length === 0
+                                    ? 'bg-gray-50 text-gray-400 border-transparent cursor-pointer dark:bg-gray-900 dark:text-gray-600'
+                                    : `${colors.inactive} border-transparent`
+                                }`}
                         >
                             <Megaphone className="w-4 h-4" />
                             <span>{t.tabs.ads}</span>
@@ -1120,6 +1444,12 @@ export default function AdsTable() {
                         <LayoutGrid className="h-4 w-4" />
                         Customize
                     </Button>
+                    {activeTab === 'ads' && (
+                        <Button variant="outline" size="sm" className="h-9 gap-2" onClick={handleExportClick}>
+                            <Download className="h-4 w-4" />
+                            Export
+                        </Button>
+                    )}
                 </div>
             </div>
 
@@ -1150,7 +1480,7 @@ export default function AdsTable() {
                     <table className="w-full caption-bottom text-sm text-left">
                         <TableHeader className="bg-gray-50 sticky top-0 z-10">
                             <TableRow className="hover:bg-gray-50 border-b h-14">
-                                <TableHead 
+                                <TableHead
                                     className="border-r p-0 text-center cursor-pointer bg-gray-50 w-[40px] min-w-[40px] max-w-[40px]"
                                     onClick={() => toggleSelectAll(!(data.length > 0 && currentSelection.length === data.length))}
                                 >
@@ -1170,8 +1500,8 @@ export default function AdsTable() {
                                         <div className="flex items-center gap-1">{t.common.page} <SortIcon columnKey="pageId" /></div>
                                     </TableHead>
                                 )}
-                                <TableHead 
-                                    className="cursor-pointer border-r whitespace-nowrap bg-gray-50" 
+                                <TableHead
+                                    className="cursor-pointer border-r whitespace-nowrap bg-gray-50"
                                     onClick={() => handleSort('name')}
                                 >
                                     <div className="flex items-center gap-1">
@@ -1221,11 +1551,11 @@ export default function AdsTable() {
                                         <TableHead className="cursor-pointer text-right border-r whitespace-nowrap bg-gray-50" onClick={() => handleSort('budget')}>
                                             <div className="flex items-center justify-end gap-1">{t.common.budget} <SortIcon columnKey="budget" /></div>
                                         </TableHead>
-                                        <TableHead className="text-right cursor-pointer border-r whitespace-nowrap bg-gray-50" onClick={() => handleSort('impressions')}>
-                                            <div className="flex items-center justify-end gap-1">{t.common.impressions} <SortIcon columnKey="impressions" /></div>
-                                        </TableHead>
                                         <TableHead className="cursor-pointer text-right border-r whitespace-nowrap bg-gray-50" onClick={() => handleSort('reach')}>
                                             <div className="flex items-center justify-end gap-1">{t.common.reach} <SortIcon columnKey="reach" /></div>
+                                        </TableHead>
+                                        <TableHead className="text-right cursor-pointer border-r whitespace-nowrap bg-gray-50" onClick={() => handleSort('impressions')}>
+                                            <div className="flex items-center justify-end gap-1">{t.common.impressions} <SortIcon columnKey="impressions" /></div>
                                         </TableHead>
                                         <TableHead className="cursor-pointer text-right border-r whitespace-nowrap bg-gray-50" onClick={() => handleSort('postEngagements')}>
                                             <div className="flex items-center justify-end gap-1">{t.common.postEngagements} <SortIcon columnKey="postEngagements" /></div>
@@ -1270,16 +1600,92 @@ export default function AdsTable() {
                                 )}
                             </TableRow>
                         </TableHeader>
-                        <TableBody>
+                        <TableBody className="[&_tr:last-child]:border-b [&_tr:last-child]:border-gray-200">
                             {isLoading ? (
-                                <TableRow>
-                                    <TableCell colSpan={activeTab === 'accounts' ? 10 : 24} className="h-24 text-center">
-                                        <div className="flex justify-center items-center gap-2">
-                                            <RefreshCw className="h-4 w-4 animate-spin" />
-                                            <span>{t.common.loading}</span>
-                                        </div>
-                                    </TableCell>
-                                </TableRow>
+                                // Skeleton loading rows
+                                [...Array(8)].map((_, rowIndex) => (
+                                    <TableRow key={`skeleton-${rowIndex}`} className={`h-12 ${rowIndex % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}>
+                                        {/* Checkbox */}
+                                        <TableCell className="border-r p-0 text-center w-[40px] min-w-[40px] max-w-[40px]">
+                                            <div className="flex items-center justify-center h-full w-full">
+                                                <div className="h-5 w-5 rounded bg-gray-200 animate-pulse" />
+                                            </div>
+                                        </TableCell>
+                                        {/* # */}
+                                        <TableCell className="border-r text-center w-[40px] min-w-[40px] max-w-[40px]">
+                                            <div className="h-4 w-4 mx-auto rounded bg-gray-200 animate-pulse" />
+                                        </TableCell>
+                                        {activeTab !== 'accounts' && (
+                                            /* On/Off Switch */
+                                            <TableCell className="border-r text-center">
+                                                <div className="h-5 w-9 mx-auto rounded-full bg-gray-200 animate-pulse" />
+                                            </TableCell>
+                                        )}
+                                        {activeTab === 'ads' && (
+                                            /* Page */
+                                            <TableCell className="border-r">
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="h-4 w-24 rounded bg-gray-200 animate-pulse" />
+                                                    <div className="h-3 w-16 rounded bg-gray-200 animate-pulse" />
+                                                </div>
+                                            </TableCell>
+                                        )}
+                                        {/* Name */}
+                                        <TableCell className="border-r">
+                                            {activeTab === 'ads' ? (
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded bg-gray-200 animate-pulse flex-none" />
+                                                    <div className="flex flex-col gap-1">
+                                                        <div className="h-4 w-32 rounded bg-gray-200 animate-pulse" />
+                                                        <div className="h-3 w-20 rounded bg-gray-200 animate-pulse" />
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-col gap-1">
+                                                    <div className="h-4 w-40 rounded bg-gray-200 animate-pulse" />
+                                                    <div className="h-3 w-24 rounded bg-gray-200 animate-pulse" />
+                                                </div>
+                                            )}
+                                        </TableCell>
+                                        {activeTab === 'accounts' ? (
+                                            <>
+                                                {/* Status, Active Ads, Spending Cap, Payment, Timezone, Country, Currency, Limit, Action */}
+                                                <TableCell className="border-r text-center"><div className="h-5 w-16 mx-auto rounded-full bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-center"><div className="h-4 w-8 mx-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-20 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r"><div className="h-5 w-24 rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-16 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-8 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-10 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-16 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="text-right"><div className="h-6 w-6 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                            </>
+                                        ) : (
+                                            <>
+                                                {/* Delivery, Results, Cost/Result, Budget, Impressions, Reach, Post Eng, Clicks, Msg, Spend, Cost/Msg, Video metrics */}
+                                                <TableCell className="border-r"><div className="h-5 w-16 rounded-full bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-12 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-16 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-20 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-16 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-16 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-14 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-12 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-10 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-16 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-14 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-12 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-14 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-14 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-14 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-14 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-14 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="border-r text-right"><div className="h-4 w-14 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                                <TableCell className="text-right"><div className="h-4 w-14 ml-auto rounded bg-gray-200 animate-pulse" /></TableCell>
+                                            </>
+                                        )}
+                                    </TableRow>
+                                ))
                             ) : data.length === 0 ? (
                                 <TableRow>
                                     <TableCell colSpan={activeTab === 'accounts' ? 10 : 24} className="h-24 text-center">
@@ -1293,11 +1699,11 @@ export default function AdsTable() {
                                         className={`cursor-pointer hover:bg-muted/50 h-12 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/50'}`}
                                         onClick={() => handleRowClick(item)}
                                     >
-                                        <TableCell 
+                                        <TableCell
                                             onClick={(e) => {
                                                 e.stopPropagation()
                                                 toggleSelectRow(item.id, !currentSelection.includes(item.id))
-                                            }} 
+                                            }}
                                             className="border-r p-0 text-center cursor-pointer w-[40px] min-w-[40px] max-w-[40px]"
                                         >
                                             <div className="flex items-center justify-center h-full w-full">
@@ -1311,8 +1717,8 @@ export default function AdsTable() {
                                         {activeTab !== 'accounts' && (
                                             <TableCell className="border-r text-center">
                                                 <div className="flex items-center justify-center">
-                                                    <Switch 
-                                                        checked={item.status === 'ACTIVE'} 
+                                                    <Switch
+                                                        checked={item.status === 'ACTIVE'}
                                                         disabled={togglingIds.has(item.id)}
                                                         onClick={(e) => handleToggleStatus(item, e)}
                                                     />
@@ -1322,7 +1728,7 @@ export default function AdsTable() {
                                         {activeTab === 'ads' && (
                                             <TableCell className="border-r">
                                                 {item.pageId ? (
-                                                    <a 
+                                                    <a
                                                         href={`https://www.facebook.com/${item.pageId}`}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
@@ -1330,7 +1736,7 @@ export default function AdsTable() {
                                                         onClick={(e) => e.stopPropagation()}
                                                     >
                                                         <span className="text-sm whitespace-nowrap" title={item.pageName || item.pageId}>{item.pageName || item.pageId}</span>
-                                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">ID: {item.pageId}</span>
+                                                        <span className="text-xs text-muted-foreground whitespace-nowrap">ID: {item.pageId}</span>
                                                     </a>
                                                 ) : (
                                                     <span className="text-muted-foreground">-</span>
@@ -1353,7 +1759,7 @@ export default function AdsTable() {
                                                     )}
                                                     <div className="flex flex-col min-w-0">
                                                         <span className="font-medium text-sm whitespace-nowrap" title={item.name}>{item.name}</span>
-                                                        <span className="text-[10px] text-muted-foreground whitespace-nowrap">ID: {item.id}</span>
+                                                        <span className="text-xs text-muted-foreground whitespace-nowrap">ID: {item.id}</span>
                                                     </div>
                                                 </div>
                                             ) : (
@@ -1373,8 +1779,8 @@ export default function AdsTable() {
                                                 <TableCell className="border-r text-center">
                                                     <span className="text-sm font-medium">{item.activeAdsCount || 0}</span>
                                                 </TableCell>
-                                                <TableCell 
-                                                    className="text-right border-r cursor-pointer hover:bg-gray-50" 
+                                                <TableCell
+                                                    className="text-right border-r cursor-pointer hover:bg-gray-50"
                                                     onClick={(e) => {
                                                         e.stopPropagation()
                                                         openSpendingLimitDialog(item, 'change')
@@ -1384,7 +1790,7 @@ export default function AdsTable() {
                                                         <div className="group relative flex items-center justify-end gap-2">
                                                             {/* Edit icon - shows on hover */}
                                                             <Pencil className="h-3.5 w-3.5 text-gray-400 opacity-0 group-hover:opacity-100 transition-opacity" />
-                                                            
+
                                                             {/* Progress bar */}
                                                             <div className="flex items-center gap-2 min-w-[80px]">
                                                                 {(() => {
@@ -1392,11 +1798,11 @@ export default function AdsTable() {
                                                                     const cap = parseFloat(item.spendCap) / 100
                                                                     const percentage = cap > 0 ? Math.min(100, Math.round((spent / cap) * 100)) : 0
                                                                     const progressColor = percentage >= 90 ? 'bg-red-500' : percentage >= 70 ? 'bg-orange-400' : 'bg-emerald-500'
-                                                                    
+
                                                                     return (
                                                                         <>
                                                                             <div className="relative w-16 h-1.5 bg-gray-200 rounded-full overflow-hidden">
-                                                                                <div 
+                                                                                <div
                                                                                     className={`absolute left-0 top-0 h-full ${progressColor} rounded-full transition-all`}
                                                                                     style={{ width: `${percentage}%` }}
                                                                                 />
@@ -1406,7 +1812,7 @@ export default function AdsTable() {
                                                                     )
                                                                 })()}
                                                             </div>
-                                                            
+
                                                             {/* Tooltip with amount */}
                                                             <div className="absolute top-full right-0 mt-1 opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
                                                                 <div className="bg-gray-900 text-white text-xs px-2 py-1 rounded whitespace-nowrap">
@@ -1430,8 +1836,8 @@ export default function AdsTable() {
                                                 <TableCell className="text-right border-r">
                                                     {item.spendCap ? formatCurrency(parseFloat(item.spendCap) / 100, item.currency || 'USD') : '-'}
                                                 </TableCell>
-                                                <TableCell 
-                                                    className="text-center cursor-pointer hover:bg-gray-100 transition-colors" 
+                                                <TableCell
+                                                    className="text-center cursor-pointer hover:bg-gray-100 transition-colors"
                                                     onClick={(e) => {
                                                         e.stopPropagation()
                                                         window.open(`https://adsmanager.facebook.com/adsmanager/manage/campaigns?act=${item.id}`, '_blank')
@@ -1450,12 +1856,39 @@ export default function AdsTable() {
                                                     {(() => {
                                                         // Get result based on campaign objective
                                                         const objective = item.objective?.toUpperCase() || ''
-                                                        
+
+                                                        // Check messaging metrics
+                                                        const messagingResult = getActionValue(item.actions, 'onsite_conversion.messaging_conversation_started_7d')
+                                                        const messagingFirstReply = getActionValue(item.actions, 'onsite_conversion.messaging_first_reply')
+
+                                                        // Check if this campaign has messaging action type or cost type (indicates it's a messaging campaign)
+                                                        const isMessagingCampaign =
+                                                            hasActionType(item.actions, 'onsite_conversion.messaging_conversation_started_7d') ||
+                                                            hasActionType(item.actions, 'onsite_conversion.messaging_first_reply') ||
+                                                            hasCostType(item.costPerActionType, 'onsite_conversion.messaging_conversation_started_7d') ||
+                                                            hasCostType(item.costPerActionType, 'onsite_conversion.messaging_first_reply') ||
+                                                            messagingResult > 0 || messagingFirstReply > 0
+
+                                                        // For OUTCOME_ENGAGEMENT and MESSAGES objectives, always show messaging results
+                                                        // These campaigns are typically used for messaging even if no data yet
+                                                        if (objective === 'OUTCOME_ENGAGEMENT' || objective === 'MESSAGES') {
+                                                            if (messagingResult > 0) return formatNumber(messagingResult)
+                                                            if (messagingFirstReply > 0) return formatNumber(messagingFirstReply)
+                                                            // Show 0 for messaging campaigns with no results
+                                                            return '0'
+                                                        }
+
+                                                        // For other objectives, check if it's a messaging campaign
+                                                        if (isMessagingCampaign) {
+                                                            if (messagingResult > 0) return formatNumber(messagingResult)
+                                                            if (messagingFirstReply > 0) return formatNumber(messagingFirstReply)
+                                                            return '0'
+                                                        }
+
                                                         // Map objectives to their primary result action types
                                                         const objectiveToActionMap: Record<string, string[]> = {
-                                                            // Messaging objectives
-                                                            'MESSAGES': ['onsite_conversion.messaging_conversation_started_7d', 'onsite_conversion.messaging_first_reply'],
-                                                            'OUTCOME_ENGAGEMENT': ['onsite_conversion.messaging_conversation_started_7d', 'post_engagement', 'page_engagement'],
+                                                            // Engagement objectives
+                                                            'OUTCOME_ENGAGEMENT': ['post_engagement', 'page_engagement'],
                                                             // Traffic/Clicks objectives  
                                                             'LINK_CLICKS': ['link_click', 'landing_page_view'],
                                                             'OUTCOME_TRAFFIC': ['link_click', 'landing_page_view'],
@@ -1476,19 +1909,18 @@ export default function AdsTable() {
                                                             'REACH': ['reach'],
                                                             'BRAND_AWARENESS': ['reach', 'impressions'],
                                                         }
-                                                        
+
                                                         // Get the action types for this objective
                                                         const actionTypes = objectiveToActionMap[objective] || []
-                                                        
+
                                                         // Try each action type in order
                                                         for (const type of actionTypes) {
                                                             const val = getActionValue(item.actions, type)
                                                             if (val > 0) return formatNumber(val)
                                                         }
-                                                        
+
                                                         // Fallback: try common action types
                                                         const fallbackTypes = [
-                                                            'onsite_conversion.messaging_conversation_started_7d',
                                                             'link_click',
                                                             'post_engagement',
                                                             'video_view',
@@ -1498,7 +1930,7 @@ export default function AdsTable() {
                                                             const val = getActionValue(item.actions, type)
                                                             if (val > 0) return formatNumber(val)
                                                         }
-                                                        
+
                                                         return '-'
                                                     })()}
                                                 </TableCell>
@@ -1506,10 +1938,39 @@ export default function AdsTable() {
                                                     {(() => {
                                                         // Get cost per result based on campaign objective
                                                         const objective = item.objective?.toUpperCase() || ''
-                                                        
+
+                                                        // Check messaging costs
+                                                        const messagingCost = getCostPerAction(item.costPerActionType, 'onsite_conversion.messaging_conversation_started_7d')
+                                                        const messagingFirstReplyCost = getCostPerAction(item.costPerActionType, 'onsite_conversion.messaging_first_reply')
+
+                                                        // Check messaging results
+                                                        const messagingResult = getActionValue(item.actions, 'onsite_conversion.messaging_conversation_started_7d')
+                                                        const messagingFirstReply = getActionValue(item.actions, 'onsite_conversion.messaging_first_reply')
+
+                                                        // Check if this campaign has messaging action type or cost type (indicates it's a messaging campaign)
+                                                        const isMessagingCampaign =
+                                                            hasActionType(item.actions, 'onsite_conversion.messaging_conversation_started_7d') ||
+                                                            hasActionType(item.actions, 'onsite_conversion.messaging_first_reply') ||
+                                                            hasCostType(item.costPerActionType, 'onsite_conversion.messaging_conversation_started_7d') ||
+                                                            hasCostType(item.costPerActionType, 'onsite_conversion.messaging_first_reply') ||
+                                                            messagingResult > 0 || messagingFirstReply > 0
+
+                                                        // For OUTCOME_ENGAGEMENT and MESSAGES objectives, always show messaging costs
+                                                        if (objective === 'OUTCOME_ENGAGEMENT' || objective === 'MESSAGES') {
+                                                            if (messagingCost > 0) return formatCurrency(messagingCost, item.currency || 'USD')
+                                                            if (messagingFirstReplyCost > 0) return formatCurrency(messagingFirstReplyCost, item.currency || 'USD')
+                                                            return '-'
+                                                        }
+
+                                                        // For other objectives, check if it's a messaging campaign
+                                                        if (isMessagingCampaign) {
+                                                            if (messagingCost > 0) return formatCurrency(messagingCost, item.currency || 'USD')
+                                                            if (messagingFirstReplyCost > 0) return formatCurrency(messagingFirstReplyCost, item.currency || 'USD')
+                                                            return '-'
+                                                        }
+
                                                         const objectiveToActionMap: Record<string, string[]> = {
-                                                            'MESSAGES': ['onsite_conversion.messaging_conversation_started_7d', 'onsite_conversion.messaging_first_reply'],
-                                                            'OUTCOME_ENGAGEMENT': ['onsite_conversion.messaging_conversation_started_7d', 'post_engagement', 'page_engagement'],
+                                                            'OUTCOME_ENGAGEMENT': ['post_engagement', 'page_engagement'],
                                                             'LINK_CLICKS': ['link_click', 'landing_page_view'],
                                                             'OUTCOME_TRAFFIC': ['link_click', 'landing_page_view'],
                                                             'CONVERSIONS': ['offsite_conversion', 'purchase', 'lead', 'complete_registration'],
@@ -1524,17 +1985,16 @@ export default function AdsTable() {
                                                             'REACH': ['reach'],
                                                             'BRAND_AWARENESS': ['reach', 'impressions'],
                                                         }
-                                                        
+
                                                         const actionTypes = objectiveToActionMap[objective] || []
-                                                        
+
                                                         for (const type of actionTypes) {
                                                             const cost = getCostPerAction(item.costPerActionType, type)
                                                             if (cost > 0) return formatCurrency(cost, item.currency || 'USD')
                                                         }
-                                                        
+
                                                         // Fallback
                                                         const fallbackTypes = [
-                                                            'onsite_conversion.messaging_conversation_started_7d',
                                                             'link_click',
                                                             'post_engagement',
                                                             'video_view',
@@ -1549,12 +2009,12 @@ export default function AdsTable() {
                                                 </TableCell>
                                                 <TableCell className="text-right border-r">
                                                     {(() => {
-                                                        const budgetSourceLabel = item.budgetSource === 'campaign' 
+                                                        const budgetSourceLabel = item.budgetSource === 'campaign'
                                                             ? (t.common.campaignBudget || 'Campaign Budget')
                                                             : item.budgetSource === 'adset'
                                                                 ? (t.common.adsetBudget || 'Ad Set Budget')
                                                                 : null
-                                                        
+
                                                         if (item.dailyBudget) {
                                                             return (
                                                                 <div className="flex flex-col items-end">
@@ -1583,21 +2043,29 @@ export default function AdsTable() {
                                                         return '-'
                                                     })()}
                                                 </TableCell>
-                                                <TableCell className="text-right border-r">{formatNumber(item.impressions || 0)}</TableCell>
                                                 <TableCell className="text-right border-r">{formatNumber(item.reach || 0)}</TableCell>
+                                                <TableCell className="text-right border-r">{formatNumber(item.impressions || 0)}</TableCell>
                                                 <TableCell className="text-right border-r">{formatNumber(getActionValue(item.actions, 'post_engagement'))}</TableCell>
                                                 <TableCell className="text-right border-r">{formatNumber(item.clicks || 0)}</TableCell>
                                                 <TableCell className="text-right border-r">{formatNumber(getActionValue(item.actions, 'onsite_conversion.messaging_conversation_started_7d'))}</TableCell>
                                                 <TableCell className="text-right border-r">{formatCurrency(item.spend || 0, item.currency || 'USD')}</TableCell>
                                                 <TableCell className="text-right border-r">{formatCurrency(getCostPerAction(item.costPerActionType, 'onsite_conversion.messaging_conversation_started_7d'), item.currency || 'USD')}</TableCell>
-                                                <TableCell className="text-right border-r">{formatNumber(getActionValue(item.videoAvgTimeWatched, 'video_view'))}</TableCell>
+                                                <TableCell className="text-right border-r">
+                                                    {(() => {
+                                                        const val = item.videoAvgTimeWatched ? parseFloat(item.videoAvgTimeWatched) : 0
+                                                        if (val === 0 && !item.videoAvgTimeWatched) return '-'
+                                                        const minutes = Math.floor(val / 60)
+                                                        const seconds = Math.floor(val % 60)
+                                                        return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
+                                                    })()}
+                                                </TableCell>
+                                                <TableCell className="text-right border-r">{formatNumber(item.videoPlays || 0)}</TableCell>
                                                 <TableCell className="text-right border-r">{formatNumber(getActionValue(item.actions, 'video_view'))}</TableCell>
-                                                <TableCell className="text-right border-r">{formatNumber(getActionValue(item.actions, 'video_view'))}</TableCell>
-                                                <TableCell className="text-right border-r">{formatNumber(getActionValue(item.videoP25Watched, 'video_view'))}</TableCell>
-                                                <TableCell className="text-right border-r">{formatNumber(getActionValue(item.videoP50Watched, 'video_view'))}</TableCell>
-                                                <TableCell className="text-right border-r">{formatNumber(getActionValue(item.videoP75Watched, 'video_view'))}</TableCell>
-                                                <TableCell className="text-right border-r">{formatNumber(getActionValue(item.videoP95Watched, 'video_view'))}</TableCell>
-                                                <TableCell className="text-right">{formatNumber(getActionValue(item.videoP100Watched, 'video_view'))}</TableCell>
+                                                <TableCell className="text-right border-r">{formatNumber(item.videoP25Watched || 0)}</TableCell>
+                                                <TableCell className="text-right border-r">{formatNumber(item.videoP50Watched || 0)}</TableCell>
+                                                <TableCell className="text-right border-r">{formatNumber(item.videoP75Watched || 0)}</TableCell>
+                                                <TableCell className="text-right border-r">{formatNumber(item.videoP95Watched || 0)}</TableCell>
+                                                <TableCell className="text-right">{formatNumber(item.videoP100Watched || 0)}</TableCell>
                                             </>
                                         )}
                                     </TableRow>
@@ -1613,6 +2081,93 @@ export default function AdsTable() {
                 </div>
             )}
 
+            {/* Export Dialog */}
+            <Dialog open={exportDialogOpen} onOpenChange={setExportDialogOpen}>
+                <DialogContent className="sm:max-w-[400px]">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <Download className="h-5 w-5" />
+                            เลือกรูปแบบการส่งออก
+                        </DialogTitle>
+                    </DialogHeader>
+
+                    <div className="space-y-3 py-4">
+                        {/* CSV Option */}
+                        <button
+                            onClick={exportToCSV}
+                            disabled={isExporting}
+                            className="w-full flex items-center gap-4 p-4 rounded-lg border hover:bg-gray-50 hover:border-gray-300 transition-colors text-left disabled:opacity-50"
+                        >
+                            <div className="h-12 w-12 rounded-lg bg-green-100 flex items-center justify-center flex-shrink-0">
+                                <svg className="h-7 w-7 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <div className="font-medium">CSV File</div>
+                                <div className="text-sm text-muted-foreground">ไฟล์ข้อความที่คั่นด้วยคอมมา</div>
+                            </div>
+                        </button>
+
+                        {/* Excel Option */}
+                        <button
+                            onClick={exportToExcel}
+                            disabled={isExporting}
+                            className="w-full flex items-center gap-4 p-4 rounded-lg border hover:bg-gray-50 hover:border-gray-300 transition-colors text-left disabled:opacity-50"
+                        >
+                            <div className="h-12 w-12 rounded-lg bg-emerald-100 flex items-center justify-center flex-shrink-0">
+                                <svg className="h-7 w-7 text-emerald-600" viewBox="0 0 24 24" fill="currentColor">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6zm-1 2l5 5h-5V4zM8.5 13H10v4.5a.5.5 0 0 1-1 0V14H8.5a.5.5 0 0 1 0-1zm3.5-.5a.5.5 0 0 1 .5.5v2.5h1v-2.5a.5.5 0 0 1 1 0v3a.5.5 0 0 1-.5.5h-2a.5.5 0 0 1-.5-.5v-3a.5.5 0 0 1 .5-.5z" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <div className="font-medium">Excel (.xls)</div>
+                                <div className="text-sm text-muted-foreground">Microsoft Excel Spreadsheet</div>
+                            </div>
+                        </button>
+
+                        {/* Google Sheets Quick Option */}
+                        <button
+                            onClick={exportToGoogleSheets}
+                            disabled={isExporting}
+                            className="w-full flex items-center gap-4 p-4 rounded-lg border hover:bg-gray-50 hover:border-gray-300 transition-colors text-left disabled:opacity-50"
+                        >
+                            <div className="h-12 w-12 rounded-lg bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" fill="#0F9D58" />
+                                    <rect x="6" y="6" width="12" height="12" fill="white" />
+                                    <rect x="6" y="6" width="4" height="3" fill="#0F9D58" />
+                                    <rect x="10" y="6" width="4" height="3" fill="#57BB8A" />
+                                    <rect x="14" y="6" width="4" height="3" fill="#0F9D58" />
+                                    <rect x="6" y="9" width="4" height="3" fill="#57BB8A" />
+                                    <rect x="10" y="9" width="4" height="3" fill="#0F9D58" />
+                                    <rect x="14" y="9" width="4" height="3" fill="#57BB8A" />
+                                    <rect x="6" y="12" width="4" height="3" fill="#0F9D58" />
+                                    <rect x="10" y="12" width="4" height="3" fill="#57BB8A" />
+                                    <rect x="14" y="12" width="4" height="3" fill="#0F9D58" />
+                                    <rect x="6" y="15" width="4" height="3" fill="#57BB8A" />
+                                    <rect x="10" y="15" width="4" height="3" fill="#0F9D58" />
+                                    <rect x="14" y="15" width="4" height="3" fill="#57BB8A" />
+                                </svg>
+                            </div>
+                            <div className="flex-1">
+                                <div className="font-medium">Google Sheets (ด่วน)</div>
+                                <div className="text-sm text-muted-foreground">คัดลอกและเปิด Google Sheets ใหม่</div>
+                            </div>
+                        </button>
+
+
+                    </div>
+
+                    <div className="text-xs text-muted-foreground text-center">
+                        จะส่งออก {sortedData.length} รายการจาก {activeTab === 'accounts' ? 'Accounts' : activeTab === 'campaigns' ? 'Campaigns' : activeTab === 'adsets' ? 'Ad Sets' : 'Ads'}
+                    </div>
+                </DialogContent>
+            </Dialog>
+
+            {/* Google Sheets Config Dialog */}
+
+
             {/* Spending Limit Dialog */}
             <Dialog open={spendingLimitDialogOpen} onOpenChange={setSpendingLimitDialogOpen}>
                 <DialogContent className="sm:max-w-[425px]">
@@ -1622,7 +2177,7 @@ export default function AdsTable() {
                             Set Spending Limit
                         </DialogTitle>
                     </DialogHeader>
-                    
+
                     {selectedAccountForLimit && (
                         <div className="space-y-4">
                             {/* Account Info */}
@@ -1635,11 +2190,11 @@ export default function AdsTable() {
                             <div className="space-y-1">
                                 <div className="text-sm">
                                     <span className="font-medium">Money Left: </span>
-                                    {selectedAccountForLimit.spendCap 
+                                    {selectedAccountForLimit.spendCap
                                         ? formatCurrency(
-                                            Math.max(0, (parseFloat(selectedAccountForLimit.spendCap) - parseFloat(selectedAccountForLimit.amountSpent || '0')) / 100), 
+                                            Math.max(0, (parseFloat(selectedAccountForLimit.spendCap) - parseFloat(selectedAccountForLimit.amountSpent || '0')) / 100),
                                             selectedAccountForLimit.currency || 'USD'
-                                          )
+                                        )
                                         : 'No limit'
                                     }
                                 </div>
@@ -1650,7 +2205,7 @@ export default function AdsTable() {
                                     </span>
                                     <span> • Limit: </span>
                                     <span className="text-primary font-medium">
-                                        {selectedAccountForLimit.spendCap 
+                                        {selectedAccountForLimit.spendCap
                                             ? formatCurrency(parseFloat(selectedAccountForLimit.spendCap) / 100, selectedAccountForLimit.currency || 'USD')
                                             : 'No limit'
                                         }
@@ -1671,9 +2226,9 @@ export default function AdsTable() {
                                     <Label className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">Choose an Action</Label>
                                     <div className="flex gap-4">
                                         <label className="flex items-center gap-2 cursor-pointer">
-                                            <input 
-                                                type="radio" 
-                                                name="action" 
+                                            <input
+                                                type="radio"
+                                                name="action"
                                                 checked={spendingLimitAction === 'change'}
                                                 onChange={() => setSpendingLimitAction('change')}
                                                 className="w-4 h-4 accent-primary"
@@ -1681,9 +2236,9 @@ export default function AdsTable() {
                                             <span className="text-sm">Change Limit</span>
                                         </label>
                                         <label className="flex items-center gap-2 cursor-pointer">
-                                            <input 
-                                                type="radio" 
-                                                name="action" 
+                                            <input
+                                                type="radio"
+                                                name="action"
                                                 checked={spendingLimitAction === 'reset'}
                                                 onChange={() => setSpendingLimitAction('reset')}
                                                 className="w-4 h-4 accent-primary"
@@ -1718,15 +2273,15 @@ export default function AdsTable() {
                             )}
 
                             {/* Submit Button */}
-                            <Button 
+                            <Button
                                 onClick={handleSpendingLimitSubmit}
                                 disabled={isUpdatingLimit || (spendingLimitAction === 'change' && !newSpendingLimit)}
                                 className="w-full bg-primary hover:bg-primary/90"
                             >
                                 <Pencil className="h-4 w-4 mr-2" />
-                                {isUpdatingLimit 
-                                    ? 'Updating...' 
-                                    : spendingLimitAction === 'reset' 
+                                {isUpdatingLimit
+                                    ? 'Updating...'
+                                    : spendingLimitAction === 'reset'
                                         ? 'Reset Limit'
                                         : 'Change Limit'
                                 }

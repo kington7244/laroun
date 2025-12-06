@@ -16,6 +16,12 @@ model User {
   image          String?
   facebookAdToken String?  @db.Text
   facebookName   String?   // Name from connected Facebook account
+  
+  // Google Sheets Integration
+  googleRefreshToken String? @db.Text
+  googleEmail        String?
+  googleName         String?
+
   role           String    @default("host") // host, admin, staff - new users are host by default
   
   // User Settings
@@ -221,4 +227,42 @@ model ActivityLog {
   @@index([userId])
   @@index([createdAt])
   @@index([action])
+}
+
+// Google Sheets Export Configuration
+model ExportConfig {
+  id                String   @id @default(cuid())
+  userId            String
+  name              String   // Config name for identification
+  spreadsheetUrl    String   @db.Text // Google Sheets URL
+  spreadsheetId     String   // Extracted from URL
+  sheetName         String   // Sheet/Tab name
+  dataType          String   // accounts, campaigns, adsets, ads
+  accountIds        String?  @db.Text // JSON array of selected ad account IDs
+  columnMapping     String   @db.Text // JSON mapping of data columns to sheet columns
+  
+  // Auto Export Settings
+  autoExportEnabled Boolean  @default(false)
+  exportFrequency   String?  // daily, hourly
+  exportHour        Int?     // Hour of day (0-23) for daily export
+  exportInterval    Int?     // Hours between exports for hourly
+  appendMode        Boolean  @default(true) // true = append new rows, false = replace all
+  includeDate       Boolean  @default(true) // Add date column
+  
+  // Timezone Support
+  adAccountTimezone    String?  // e.g., "Asia/Bangkok"
+  useAdAccountTimezone Boolean  @default(false)
+  exportMinute         Int?     @default(0) // Minute of hour (0-59)
+  
+  // Status tracking
+  lastExportAt      DateTime?
+  lastExportStatus  String?  // success, failed
+  lastExportError   String?  @db.Text
+  lastExportRows    Int?
+  
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([userId])
+  @@index([autoExportEnabled])
 }

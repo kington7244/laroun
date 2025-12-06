@@ -29,7 +29,7 @@ export default function PrivacyPolicyPage() {
 
                 <div className="prose prose-gray max-w-none">
                     <p className="text-gray-600 mb-6">
-                        {language === "th" 
+                        {language === "th"
                             ? "อัปเดตล่าสุด: 4 ธันวาคม 2568"
                             : "Last updated: December 4, 2025"}
                     </p>
@@ -39,12 +39,12 @@ export default function PrivacyPolicyPage() {
                             {language === "th" ? "1. บทนำ" : "1. Introduction"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
-                                ? "Laroun (\"เรา\", \"ของเรา\") ให้ความสำคัญกับความเป็นส่วนตัวของคุณ นโยบายความเป็นส่วนตัวนี้อธิบายวิธีที่เราเก็บรวบรวม ใช้ และปกป้องข้อมูลส่วนบุคคลของคุณเมื่อคุณใช้บริการของเรา รวมถึงการเชื่อมต่อกับ Facebook/Meta APIs"
-                                : "Laroun (\"we\", \"our\", \"us\") respects your privacy. This Privacy Policy explains how we collect, use, and protect your personal information when you use our services, including integration with Facebook/Meta APIs."}
+                            {language === "th"
+                                ? "GATE169 (\"เรา\", \"ของเรา\") ให้ความสำคัญกับความเป็นส่วนตัวของคุณ นโยบายความเป็นส่วนตัวนี้อธิบายวิธีที่เราเก็บรวบรวม ใช้ และปกป้องข้อมูลส่วนบุคคลของคุณเมื่อคุณใช้บริการของเรา รวมถึงการเชื่อมต่อกับ Facebook/Meta APIs"
+                                : "GATE169 (\"we\", \"our\", \"us\") respects your privacy. This Privacy Policy explains how we collect, use, and protect your personal information when you use our services, including integration with Facebook/Meta APIs."}
                         </p>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "โดยการใช้บริการของเรา คุณยินยอมให้มีการเก็บรวบรวมและใช้ข้อมูลตามนโยบายนี้"
                                 : "By using our services, you consent to the collection and use of information in accordance with this policy."}
                         </p>
@@ -72,7 +72,7 @@ export default function PrivacyPolicyPage() {
                             {language === "th" ? "3. การใช้ข้อมูล Facebook" : "3. Facebook Data Usage"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "เมื่อคุณเชื่อมต่อบัญชี Facebook ของคุณ เราจะ:"
                                 : "When you connect your Facebook account, we:"}
                         </p>
@@ -106,7 +106,7 @@ export default function PrivacyPolicyPage() {
                             {language === "th" ? "5. การแบ่งปันข้อมูล" : "5. Information Sharing"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "เราไม่ขายข้อมูลส่วนบุคคลของคุณ เราอาจแบ่งปันข้อมูลกับ:"
                                 : "We do not sell your personal information. We may share information with:"}
                         </p>
@@ -122,12 +122,12 @@ export default function PrivacyPolicyPage() {
                             {language === "th" ? "6. การเก็บรักษาและลบข้อมูล" : "6. Data Retention and Deletion"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "เราเก็บรักษาข้อมูลของคุณตราบเท่าที่บัญชีของคุณยังใช้งานอยู่ หรือตามที่จำเป็นเพื่อให้บริการแก่คุณ"
                                 : "We retain your data as long as your account is active or as needed to provide you services."}
                         </p>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "คุณสามารถขอลบข้อมูลได้ตลอดเวลาโดย:"
                                 : "You can request data deletion at any time by:"}
                         </p>
@@ -143,7 +143,7 @@ export default function PrivacyPolicyPage() {
                             {language === "th" ? "7. ความปลอดภัยของข้อมูล" : "7. Data Security"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "เราใช้มาตรการรักษาความปลอดภัยที่เหมาะสมเพื่อปกป้องข้อมูลของคุณ:"
                                 : "We implement appropriate security measures to protect your data:"}
                         </p>
@@ -177,7 +177,7 @@ export default function PrivacyPolicyPage() {
                             {language === "th" ? "9. คุกกี้และเทคโนโลยีการติดตาม" : "9. Cookies and Tracking Technologies"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "เราใช้คุกกี้เพื่อ:"
                                 : "We use cookies to:"}
                         </p>
@@ -187,7 +187,7 @@ export default function PrivacyPolicyPage() {
                             <li>{language === "th" ? "วิเคราะห์การใช้งานเว็บไซต์" : "Analyze website usage"}</li>
                         </ul>
                         <p className="text-gray-700 mt-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "คุณสามารถจัดการการตั้งค่าคุกกี้ในเบราว์เซอร์ของคุณได้"
                                 : "You can manage cookie settings in your browser."}
                         </p>
@@ -198,7 +198,7 @@ export default function PrivacyPolicyPage() {
                             {language === "th" ? "10. การเปลี่ยนแปลงนโยบาย" : "10. Policy Changes"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "เราอาจอัปเดตนโยบายนี้เป็นครั้งคราว เราจะแจ้งให้คุณทราบถึงการเปลี่ยนแปลงที่สำคัญผ่านทางอีเมลหรือประกาศบนเว็บไซต์ของเรา การใช้บริการต่อหลังจากมีการเปลี่ยนแปลงถือว่าคุณยอมรับนโยบายใหม่"
                                 : "We may update this policy periodically. We will notify you of significant changes via email or a notice on our website. Continued use of our services after changes constitutes acceptance of the new policy."}
                         </p>
@@ -209,13 +209,13 @@ export default function PrivacyPolicyPage() {
                             {language === "th" ? "11. ติดต่อเรา" : "11. Contact Us"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "หากคุณมีคำถามเกี่ยวกับนโยบายความเป็นส่วนตัวนี้ หรือต้องการใช้สิทธิ์เกี่ยวกับข้อมูลของคุณ กรุณาติดต่อเราที่:"
                                 : "If you have questions about this Privacy Policy or want to exercise your data rights, please contact us at:"}
                         </p>
                         <div className="text-gray-700 space-y-2">
-                            <p><strong>Email:</strong> <a href="mailto:privacy@laroun.com" className="text-blue-600 hover:underline">privacy@laroun.com</a></p>
-                            <p><strong>{language === "th" ? "เว็บไซต์" : "Website"}:</strong> <a href="https://www.laroun.com" className="text-blue-600 hover:underline">www.laroun.com</a></p>
+                            <p><strong>Email:</strong> <a href="mailto:privacy@gate169.com" className="text-blue-600 hover:underline">privacy@gate169.com</a></p>
+                            <p><strong>{language === "th" ? "เว็บไซต์" : "Website"}:</strong> <a href="https://www.gate169.com" className="text-blue-600 hover:underline">www.gate169.com</a></p>
                         </div>
                     </section>
 
@@ -224,7 +224,7 @@ export default function PrivacyPolicyPage() {
                             {language === "th" ? "12. ข้อมูลสำหรับ Facebook/Meta" : "12. Facebook/Meta Compliance"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "แอปพลิเคชันนี้ใช้ Facebook Login และ Facebook Marketing API แอปนี้ปฏิบัติตาม:"
                                 : "This application uses Facebook Login and Facebook Marketing API. This app complies with:"}
                         </p>
@@ -246,7 +246,7 @@ export default function PrivacyPolicyPage() {
             {/* Footer */}
             <footer className="bg-white border-t py-6">
                 <div className="container mx-auto px-6 text-center text-sm text-gray-500">
-                    © 2025 Laroun. {language === "th" ? "สงวนลิขสิทธิ์." : "All rights reserved."}
+                    © 2025 GATE169. {language === "th" ? "สงวนลิขสิทธิ์." : "All rights reserved."}
                 </div>
             </footer>
         </div>

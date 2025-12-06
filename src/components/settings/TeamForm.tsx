@@ -9,11 +9,12 @@ import { Avatar, AvatarFallback } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { 
-    Users, UserPlus, Trash2, Loader2, RefreshCw, 
-    Shield, User, ToggleLeft, ToggleRight, AlertCircle, Crown
+import {
+    Users, UserPlus, Trash2, Loader2,
+    Shield, User, AlertCircle, Crown
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { useLanguage } from "@/contexts/LanguageContext"
 
 interface TeamMember {
     id: string;
@@ -48,6 +49,7 @@ interface CurrentUser {
 }
 
 export function TeamForm() {
+    const { t } = useLanguage()
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [team, setTeam] = useState<Team | null>(null);
@@ -56,7 +58,7 @@ export function TeamForm() {
     const [isHost, setIsHost] = useState(false);
     const [newMemberEmail, setNewMemberEmail] = useState('');
     const [newMemberRole, setNewMemberRole] = useState<'staff' | 'admin'>('staff');
-    const [autoAssigning, setAutoAssigning] = useState(false);
+
 
     useEffect(() => {
         loadTeam();
@@ -67,16 +69,16 @@ export function TeamForm() {
             setLoading(true);
             const res = await fetch('/api/team');
             const data = await res.json();
-            
+
             console.log('[TeamForm] API response:', data);
-            
+
             setTeam(data.team);
             setCurrentUser(data.user);
             setCanManage(data.canManage);
             setIsHost(data.isHost);
         } catch (error) {
             console.error('Error loading team:', error);
-            toast.error('ไม่สามารถโหลดข้อมูลทีมได้');
+            toast.error(t.settings.team.toast.loadError);
         } finally {
             setLoading(false);
         }
@@ -90,13 +92,13 @@ export function TeamForm() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'createTeam', teamName: 'My Team' })
             });
-            
+
             if (res.ok) {
-                toast.success('สร้างทีมสำเร็จ');
+                toast.success(t.settings.team.toast.createSuccess);
                 loadTeam();
             }
         } catch (error) {
-            toast.error('ไม่สามารถสร้างทีมได้');
+            toast.error(t.settings.team.toast.createError);
         } finally {
             setSaving(false);
         }
@@ -104,7 +106,7 @@ export function TeamForm() {
 
     const addMember = async () => {
         if (!newMemberEmail.trim()) {
-            toast.error('กรุณากรอกอีเมล');
+            toast.error(t.settings.team.toast.emailRequired);
             return;
         }
 
@@ -113,24 +115,24 @@ export function TeamForm() {
             const res = await fetch('/api/team', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    action: 'addMember', 
+                body: JSON.stringify({
+                    action: 'addMember',
                     memberEmail: newMemberEmail.trim(),
                     memberRole: newMemberRole
                 })
             });
-            
+
             if (res.ok) {
-                toast.success('เพิ่มสมาชิกสำเร็จ');
+                toast.success(t.settings.team.toast.addSuccess);
                 setNewMemberEmail('');
                 setNewMemberRole('staff');
                 loadTeam();
             } else {
                 const data = await res.json();
-                toast.error(data.error || 'ไม่สามารถเพิ่มสมาชิกได้');
+                toast.error(data.error || t.settings.team.toast.addError);
             }
         } catch (error) {
-            toast.error('ไม่สามารถเพิ่มสมาชิกได้');
+            toast.error(t.settings.team.toast.addError);
         } finally {
             setSaving(false);
         }
@@ -143,21 +145,21 @@ export function TeamForm() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'updateMemberRole', memberId, memberRole: role })
             });
-            
+
             if (res.ok) {
-                toast.success('เปลี่ยน Role สำเร็จ');
+                toast.success(t.settings.team.toast.roleUpdateSuccess);
                 loadTeam();
             } else {
                 const data = await res.json();
-                toast.error(data.error || 'ไม่สามารถเปลี่ยน Role ได้');
+                toast.error(data.error || t.settings.team.toast.roleUpdateError);
             }
         } catch (error) {
-            toast.error('ไม่สามารถเปลี่ยน Role ได้');
+            toast.error(t.settings.team.toast.roleUpdateError);
         }
     };
 
     const removeMember = async (memberId: string) => {
-        if (!confirm('ต้องการลบสมาชิกคนนี้?')) return;
+        if (!confirm(t.settings.team.manage.confirmRemove)) return;
 
         try {
             setSaving(true);
@@ -166,13 +168,13 @@ export function TeamForm() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'removeMember', memberId })
             });
-            
+
             if (res.ok) {
-                toast.success('ลบสมาชิกสำเร็จ');
+                toast.success(t.settings.team.toast.removeSuccess);
                 loadTeam();
             }
         } catch (error) {
-            toast.error('ไม่สามารถลบสมาชิกได้');
+            toast.error(t.settings.team.toast.removeError);
         } finally {
             setSaving(false);
         }
@@ -185,55 +187,17 @@ export function TeamForm() {
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ action: 'toggleMemberActive', memberId, isActive })
             });
-            
+
             if (res.ok) {
-                toast.success(isActive ? 'เปิดใช้งานสมาชิก' : 'ปิดใช้งานสมาชิก');
+                toast.success(isActive ? t.settings.team.manage.enableUser : t.settings.team.manage.disableUser);
                 loadTeam();
             }
         } catch (error) {
-            toast.error('ไม่สามารถเปลี่ยนสถานะได้');
+            toast.error(t.settings.team.toast.statusUpdateError);
         }
     };
 
-    const toggleAutoAssign = async (enabled: boolean) => {
-        try {
-            const res = await fetch('/api/team', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'toggleAutoAssign', autoAssignEnabled: enabled })
-            });
-            
-            if (res.ok) {
-                toast.success(enabled ? 'เปิดการแบ่งแชทอัตโนมัติ' : 'ปิดการแบ่งแชทอัตโนมัติ');
-                loadTeam();
-            }
-        } catch (error) {
-            toast.error('ไม่สามารถเปลี่ยนการตั้งค่าได้');
-        }
-    };
 
-    const autoAssignAll = async () => {
-        try {
-            setAutoAssigning(true);
-            const res = await fetch('/api/assign', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ action: 'autoAssignAll' })
-            });
-            
-            const data = await res.json();
-            
-            if (res.ok) {
-                toast.success(`แบ่งแชทสำเร็จ ${data.assigned} รายการ`);
-            } else {
-                toast.error(data.error || 'ไม่สามารถแบ่งแชทได้');
-            }
-        } catch (error) {
-            toast.error('ไม่สามารถแบ่งแชทได้');
-        } finally {
-            setAutoAssigning(false);
-        }
-    };
 
     if (loading) {
         return (
@@ -248,9 +212,9 @@ export function TeamForm() {
             <div className="flex items-center gap-3 p-4 border rounded-lg bg-yellow-50 border-yellow-200">
                 <AlertCircle className="h-5 w-5 text-yellow-500" />
                 <div>
-                    <p className="font-medium">ไม่มีสิทธิ์เข้าถึง</p>
+                    <p className="font-medium">{t.settings.team.manage.noAccess}</p>
                     <p className="text-sm text-muted-foreground">
-                        เฉพาะ Host หรือ Admin เท่านั้นที่สามารถจัดการทีมได้
+                        {t.settings.team.manage.noAccessDesc}
                     </p>
                 </div>
             </div>
@@ -261,10 +225,10 @@ export function TeamForm() {
         return (
             <div className="text-center py-8">
                 <Users className="h-12 w-12 mx-auto text-muted-foreground mb-4" />
-                <p className="text-muted-foreground mb-4">ยังไม่มีทีม</p>
+                <p className="text-muted-foreground mb-4">{t.settings.team.manage.noTeam}</p>
                 <Button onClick={createTeam} disabled={saving}>
                     {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <UserPlus className="h-4 w-4 mr-2" />}
-                    สร้างทีม
+                    {t.settings.team.manage.createTeam}
                 </Button>
             </div>
         );
@@ -272,50 +236,13 @@ export function TeamForm() {
 
     return (
         <div className="space-y-6">
-            {/* Auto-assign Settings */}
-            <div className="flex items-center justify-between p-4 border rounded-lg">
-                <div className="flex items-center gap-3">
-                    {team.autoAssignEnabled ? (
-                        <ToggleRight className="h-5 w-5 text-green-500" />
-                    ) : (
-                        <ToggleLeft className="h-5 w-5 text-muted-foreground" />
-                    )}
-                    <div>
-                        <p className="font-medium">แบ่งแชทอัตโนมัติ</p>
-                        <p className="text-sm text-muted-foreground">
-                            แบ่งแชทใหม่ให้พนักงานอัตโนมัติแบบ Round-Robin
-                        </p>
-                    </div>
-                </div>
-                <Switch
-                    checked={team.autoAssignEnabled}
-                    onCheckedChange={toggleAutoAssign}
-                />
-            </div>
-
-            {/* Manual assign all button */}
-            <Button 
-                variant="outline" 
-                onClick={autoAssignAll}
-                disabled={autoAssigning || team.members.length === 0}
-            >
-                {autoAssigning ? (
-                    <Loader2 className="h-4 w-4 animate-spin mr-2" />
-                ) : (
-                    <RefreshCw className="h-4 w-4 mr-2" />
-                )}
-                แบ่งแชทที่ยังไม่ได้มอบหมาย
-            </Button>
-
-            <Separator />
-
             {/* Add Member */}
             <div className="space-y-2">
-                <Label>เพิ่มสมาชิก</Label>
+                <Label>{t.settings.team.manage.addMember}</Label>
                 <div className="flex gap-2">
                     <Input
                         type="email"
-                        placeholder="อีเมลสมาชิก"
+                        placeholder={t.settings.team.manage.memberEmail}
                         value={newMemberEmail}
                         onChange={(e) => setNewMemberEmail(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && addMember()}
@@ -326,8 +253,8 @@ export function TeamForm() {
                             <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
-                            <SelectItem value="staff">พนักงาน</SelectItem>
-                            {isHost && <SelectItem value="admin">Admin</SelectItem>}
+                            <SelectItem value="staff">{t.settings.team.manage.roles.staff}</SelectItem>
+                            {isHost && <SelectItem value="admin">{t.settings.team.manage.roles.admin}</SelectItem>}
                         </SelectContent>
                     </Select>
                     <Button onClick={addMember} disabled={saving}>
@@ -335,8 +262,8 @@ export function TeamForm() {
                     </Button>
                 </div>
                 <p className="text-xs text-muted-foreground">
-                    ถ้าอีเมลนี้ยังไม่มีในระบบ จะสร้างบัญชีใหม่ให้อัตโนมัติ
-                    {isHost && ' (เฉพาะ Host สามารถเพิ่ม Admin ได้)'}
+                    {t.settings.team.manage.emailHint}
+                    {isHost && ` ${t.settings.team.manage.hostHint}`}
                 </p>
             </div>
 
@@ -344,8 +271,8 @@ export function TeamForm() {
 
             {/* Members List */}
             <div className="space-y-2">
-                <Label>สมาชิกในทีม ({team.members.length} คน)</Label>
-                
+                <Label>{t.settings.team.manage.membersList} ({team.members.length})</Label>
+
                 {/* Show team owner (Host) */}
                 {team.owner && (
                     <div className="flex items-center justify-between p-3 border rounded-lg bg-gradient-to-r from-amber-50 to-yellow-50 border-amber-200">
@@ -362,7 +289,7 @@ export function TeamForm() {
                                     </span>
                                     <Badge className="bg-amber-500 hover:bg-amber-600 text-xs">
                                         <Crown className="h-3 w-3 mr-1" />
-                                        Host
+                                        {t.settings.team.manage.roles.host}
                                     </Badge>
                                 </div>
                                 <p className="text-xs text-muted-foreground">
@@ -372,10 +299,10 @@ export function TeamForm() {
                         </div>
                     </div>
                 )}
-                
+
                 {team.members.length === 0 ? (
                     <p className="text-sm text-muted-foreground py-4 text-center">
-                        ยังไม่มีสมาชิก เพิ่มสมาชิกด้านบน
+                        {t.settings.team.manage.noMembers}
                     </p>
                 ) : (
                     <div className="space-y-2">
@@ -383,13 +310,12 @@ export function TeamForm() {
                             const memberRole = member.user.role;
                             const canChangeRole = isHost && memberRole !== 'host';
                             const canRemove = (isHost || (currentUser?.role === 'admin' && memberRole === 'staff')) && memberRole !== 'host';
-                            
+
                             return (
                                 <div
                                     key={member.id}
-                                    className={`flex items-center justify-between p-3 border rounded-lg ${
-                                        !member.isActive ? 'opacity-50 bg-muted' : ''
-                                    }`}
+                                    className={`flex items-center justify-between p-3 border rounded-lg ${!member.isActive ? 'opacity-50 bg-muted' : ''
+                                        }`}
                                 >
                                     <div className="flex items-center gap-3">
                                         <Avatar className="h-9 w-9">
@@ -405,22 +331,22 @@ export function TeamForm() {
                                                 {memberRole === 'host' ? (
                                                     <Badge className="bg-amber-500 hover:bg-amber-600 text-xs">
                                                         <Crown className="h-3 w-3 mr-1" />
-                                                        Host
+                                                        {t.settings.team.manage.roles.host}
                                                     </Badge>
                                                 ) : memberRole === 'admin' ? (
                                                     <Badge variant="default" className="text-xs">
                                                         <Shield className="h-3 w-3 mr-1" />
-                                                        Admin
+                                                        {t.settings.team.manage.roles.admin}
                                                     </Badge>
                                                 ) : (
                                                     <Badge variant="secondary" className="text-xs">
                                                         <User className="h-3 w-3 mr-1" />
-                                                        พนักงาน
+                                                        {t.settings.team.manage.roles.staff}
                                                     </Badge>
                                                 )}
                                                 {!member.isActive && (
                                                     <Badge variant="outline" className="text-xs">
-                                                        ปิดใช้งาน
+                                                        {t.settings.team.manage.inactive}
                                                     </Badge>
                                                 )}
                                             </div>
@@ -432,23 +358,23 @@ export function TeamForm() {
                                     <div className="flex items-center gap-2">
                                         {/* Role selector - only for Host */}
                                         {canChangeRole && (
-                                            <Select 
-                                                value={memberRole} 
+                                            <Select
+                                                value={memberRole}
                                                 onValueChange={(v) => updateMemberRole(member.user.id, v)}
                                             >
                                                 <SelectTrigger className="w-28 h-8 text-xs">
                                                     <SelectValue />
                                                 </SelectTrigger>
                                                 <SelectContent>
-                                                    <SelectItem value="staff">พนักงาน</SelectItem>
-                                                    <SelectItem value="admin">Admin</SelectItem>
+                                                    <SelectItem value="staff">{t.settings.team.manage.roles.staff}</SelectItem>
+                                                    <SelectItem value="admin">{t.settings.team.manage.roles.admin}</SelectItem>
                                                 </SelectContent>
                                             </Select>
                                         )}
                                         <Switch
                                             checked={member.isActive}
                                             onCheckedChange={(checked) => toggleMemberActive(member.user.id, checked)}
-                                            title={member.isActive ? 'ปิดใช้งาน' : 'เปิดใช้งาน'}
+                                            title={member.isActive ? t.settings.team.manage.inactive : t.settings.team.manage.active}
                                         />
                                         {canRemove && (
                                             <Button

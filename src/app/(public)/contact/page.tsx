@@ -22,8 +22,8 @@ export default function ContactPage() {
         await new Promise(resolve => setTimeout(resolve, 1000))
 
         toast.success(
-            language === "th" 
-                ? "ส่งข้อความเรียบร้อยแล้ว เราจะติดต่อกลับโดยเร็ว" 
+            language === "th"
+                ? "ส่งข้อความเรียบร้อยแล้ว เราจะติดต่อกลับโดยเร็ว"
                 : "Message sent successfully! We'll get back to you soon."
         )
 
@@ -38,22 +38,22 @@ export default function ContactPage() {
             icon: Mail,
             titleEn: "Email",
             titleTh: "อีเมล",
-            value: "support@laroun.com",
-            href: "mailto:support@laroun.com"
+            value: "support@gate169.com",
+            href: "mailto:support@gate169.com"
         },
         {
             icon: Phone,
             titleEn: "Phone",
             titleTh: "โทรศัพท์",
-            value: "+66 2 123 4567",
+            value: "+66  -",
             href: "tel:+6621234567"
         },
         {
             icon: MapPin,
             titleEn: "Address",
             titleTh: "ที่อยู่",
-            value: language === "th" 
-                ? "กรุงเทพมหานคร, ประเทศไทย" 
+            value: language === "th"
+                ? "กรุงเทพมหานคร, ประเทศไทย"
                 : "Bangkok, Thailand",
             href: null
         },
@@ -61,8 +61,8 @@ export default function ContactPage() {
             icon: Clock,
             titleEn: "Business Hours",
             titleTh: "เวลาทำการ",
-            value: language === "th" 
-                ? "จันทร์ - ศุกร์: 9:00 - 18:00" 
+            value: language === "th"
+                ? "จันทร์ - ศุกร์: 9:00 - 18:00"
                 : "Mon - Fri: 9:00 AM - 6:00 PM",
             href: null
         }
@@ -91,7 +91,7 @@ export default function ContactPage() {
                             {language === "th" ? "ติดต่อเรา" : "Contact Us"}
                         </h1>
                         <p className="text-gray-600 max-w-2xl mx-auto">
-                            {language === "th" 
+                            {language === "th"
                                 ? "มีคำถามหรือข้อเสนอแนะ? เรายินดีรับฟังจากคุณ กรอกแบบฟอร์มด้านล่างหรือติดต่อเราผ่านช่องทางอื่นๆ"
                                 : "Have questions or feedback? We'd love to hear from you. Fill out the form below or reach us through other channels."}
                         </p>
@@ -174,8 +174,8 @@ export default function ContactPage() {
                                     />
                                 </div>
 
-                                <Button 
-                                    type="submit" 
+                                <Button
+                                    type="submit"
                                     className="w-full"
                                     disabled={isSubmitting}
                                 >
@@ -215,7 +215,7 @@ export default function ContactPage() {
                                                     {language === "th" ? item.titleTh : item.titleEn}
                                                 </p>
                                                 {item.href ? (
-                                                    <a 
+                                                    <a
                                                         href={item.href}
                                                         className="text-gray-900 font-medium hover:text-blue-600 transition-colors"
                                                     >
@@ -236,7 +236,7 @@ export default function ContactPage() {
                                     {language === "th" ? "คำถามที่พบบ่อย" : "Frequently Asked Questions"}
                                 </h2>
                                 <p className="text-gray-600 mb-4">
-                                    {language === "th" 
+                                    {language === "th"
                                         ? "คุณอาจพบคำตอบสำหรับคำถามของคุณในหน้า FAQ ของเรา"
                                         : "You might find the answer to your question in our FAQ section."}
                                 </p>
@@ -253,12 +253,12 @@ export default function ContactPage() {
                                     {language === "th" ? "เวลาตอบกลับ" : "Response Time"}
                                 </h2>
                                 <p className="text-blue-100 mb-2">
-                                    {language === "th" 
+                                    {language === "th"
                                         ? "เราพยายามตอบกลับทุกข้อความภายใน 24 ชั่วโมงทำการ"
                                         : "We aim to respond to all inquiries within 24 business hours."}
                                 </p>
                                 <p className="text-blue-100 text-sm">
-                                    {language === "th" 
+                                    {language === "th"
                                         ? "สำหรับลูกค้าแผน Pro และ Enterprise จะได้รับการสนับสนุนแบบลำดับความสำคัญ"
                                         : "Pro and Enterprise customers receive priority support."}
                                 </p>
@@ -277,7 +277,7 @@ export default function ContactPage() {
             {/* Footer */}
             <footer className="bg-white border-t py-6">
                 <div className="container mx-auto px-6 text-center text-sm text-gray-500">
-                    © 2024 Laroun. {language === "th" ? "สงวนลิขสิทธิ์." : "All rights reserved."}
+                    © 2025 GATE169. {language === "th" ? "สงวนลิขสิทธิ์." : "All rights reserved."}
                 </div>
             </footer>
         </div>

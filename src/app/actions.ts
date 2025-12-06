@@ -265,6 +265,7 @@ export async function fetchConversations(pages: { id: string, access_token?: str
                     return {
                         ...conv,
                         unread_count: saved.unreadCount,
+                        adId: saved.adId,
                         lastViewedBy: saved.lastViewedBy,
                         lastViewedAt: saved.lastViewedAt?.toISOString(),
                         assignedToId: saved.assignedToId
@@ -672,6 +673,7 @@ export async function fetchConversationsFromDB(pageIds: string[]) {
                 snippet: c.snippet,
                 updated_time: c.updatedTime?.toISOString(),
                 unread_count: c.unreadCount,
+                adId: c.adId,
                 facebookLink: c.facebookLink,
                 participants: {
                     data: [{
@@ -884,4 +886,86 @@ export async function getTeamInfo() {
         team,
         isAdmin: user.role === 'admin'
     };
+}
+
+// Sync Ad IDs for all conversations (Backfill)
+export async function syncAllConversationAdIds() {
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+        throw new Error("Not authenticated");
+    }
+
+    const userId = (session.user as any).id;
+    const user = await prisma.user.findUnique({ where: { id: userId } });
+    
+    // Only admin/host can run this
+    if (user?.role !== 'admin' && user?.role !== 'host') {
+        throw new Error("Unauthorized");
+    }
+
+    // Get user's Facebook token
+    const accessToken = await getUserFacebookToken(userId);
+    if (!accessToken) {
+        throw new Error("No Facebook token found");
+    }
+
+    try {
+        // Get all conversations that don't have an adId yet
+        const conversations = await prisma.conversation.findMany({
+            where: { adId: null },
+            select: { id: true, pageId: true, facebookConversationId: true }
+        });
+
+        console.log(`[syncAllConversationAdIds] Found ${conversations.length} conversations to check`);
+
+        let updatedCount = 0;
+        
+        // Process in batches to avoid rate limits
+        const batchSize = 5;
+        for (let i = 0; i < conversations.length; i += batchSize) {
+            const batch = conversations.slice(i, i + batchSize);
+            
+            await Promise.all(batch.map(async (conv) => {
+                try {
+                    // Get page token if possible (better rate limits)
+                    const page = await prisma.pageSettings.findUnique({
+                        where: { pageId: conv.pageId },
+                        select: { pageAccessToken: true }
+                    });
+
+                    const tags = await getConversationTags(
+                        accessToken,
+                        conv.facebookConversationId || conv.id,
+                        conv.pageId,
+                        page?.pageAccessToken || undefined
+                    );
+
+                    // Extract ad_id from tags array (format: "ad_id:12345" or "ad_id.12345")
+                    const adIdTag = tags.find(t => t.match(/^ad_id[:.]\d+/));
+                    if (adIdTag) {
+                        const match = adIdTag.match(/^ad_id[:.](\d+)/);
+                        if (match && match[1]) {
+                            const adId = match[1];
+                            await prisma.conversation.update({
+                                where: { id: conv.id },
+                                data: { adId }
+                            });
+                            updatedCount++;
+                            console.log(`[syncAllConversationAdIds] Updated conversation ${conv.id} with adId ${adId}`);
+                        }
+                    }
+                } catch (e) {
+                    console.error(`[syncAllConversationAdIds] Error processing conv ${conv.id}:`, e);
+                }
+            }));
+            
+            // Small delay between batches
+            await new Promise(resolve => setTimeout(resolve, 1000));
+        }
+
+        return { success: true, updated: updatedCount, total: conversations.length };
+    } catch (error) {
+        console.error('[syncAllConversationAdIds] Error:', error);
+        throw error;
+    }
 }

@@ -29,7 +29,7 @@ export default function TermsOfServicePage() {
 
                 <div className="prose prose-gray max-w-none">
                     <p className="text-gray-600 mb-6">
-                        {language === "th" 
+                        {language === "th"
                             ? "อัปเดตล่าสุด: 4 ธันวาคม 2568"
                             : "Last updated: December 4, 2025"}
                     </p>
@@ -39,9 +39,9 @@ export default function TermsOfServicePage() {
                             {language === "th" ? "1. การยอมรับเงื่อนไข" : "1. Acceptance of Terms"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
-                                ? "โดยการเข้าถึงและใช้งาน Laroun คุณยอมรับและตกลงที่จะผูกพันตามข้อกำหนดและเงื่อนไขเหล่านี้ หากคุณไม่เห็นด้วยกับส่วนใดส่วนหนึ่งของเงื่อนไขเหล่านี้ คุณอาจไม่สามารถเข้าถึงบริการได้"
-                                : "By accessing and using Laroun, you accept and agree to be bound by these terms and conditions. If you disagree with any part of these terms, you may not access the service."}
+                            {language === "th"
+                                ? "โดยการเข้าถึงและใช้งาน GATE169 คุณยอมรับและตกลงที่จะผูกพันตามข้อกำหนดและเงื่อนไขเหล่านี้ หากคุณไม่เห็นด้วยกับส่วนใดส่วนหนึ่งของเงื่อนไขเหล่านี้ คุณอาจไม่สามารถเข้าถึงบริการได้"
+                                : "By accessing and using GATE169, you accept and agree to be bound by these terms and conditions. If you disagree with any part of these terms, you may not access the service."}
                         </p>
                     </section>
 
@@ -50,9 +50,9 @@ export default function TermsOfServicePage() {
                             {language === "th" ? "2. คำอธิบายบริการ" : "2. Description of Service"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
-                                ? "Laroun เป็นแพลตฟอร์มจัดการโฆษณา Facebook ที่ช่วยให้ผู้ใช้จัดการแคมเปญโฆษณาหลายบัญชีจากที่เดียว เราให้บริการเครื่องมือสำหรับ:"
-                                : "Laroun is a Facebook Ads management platform that helps users manage multiple ad accounts from one place. We provide tools for:"}
+                            {language === "th"
+                                ? "GATE169 เป็นแพลตฟอร์มจัดการโฆษณา Facebook ที่ช่วยให้ผู้ใช้จัดการแคมเปญโฆษณาหลายบัญชีจากที่เดียว เราให้บริการเครื่องมือสำหรับ:"
+                                : "GATE169 is a Facebook Ads management platform that helps users manage multiple ad accounts from one place. We provide tools for:"}
                         </p>
                         <ul className="list-disc list-inside text-gray-700 space-y-2 ml-4">
                             <li>{language === "th" ? "การจัดการแคมเปญโฆษณา" : "Ad campaign management"}</li>
@@ -82,7 +82,7 @@ export default function TermsOfServicePage() {
                             {language === "th" ? "4. การเชื่อมต่อ Facebook" : "4. Facebook Integration"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "เพื่อใช้บริการของเรา คุณจะต้องเชื่อมต่อบัญชี Facebook ของคุณ คุณยอมรับว่า:"
                                 : "To use our services, you will need to connect your Facebook account. You agree that:"}
                         </p>
@@ -114,7 +114,7 @@ export default function TermsOfServicePage() {
                             {language === "th" ? "6. การชำระเงินและการสมัครสมาชิก" : "6. Payment and Subscription"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "แผนการสมัครสมาชิกบางแผนอาจต้องชำระค่าบริการ ข้อกำหนดการชำระเงินรวมถึง:"
                                 : "Some subscription plans require payment. Payment terms include:"}
                         </p>
@@ -130,9 +130,9 @@ export default function TermsOfServicePage() {
                             {language === "th" ? "7. ทรัพย์สินทางปัญญา" : "7. Intellectual Property"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
-                                ? "บริการและเนื้อหาต้นฉบับ คุณสมบัติ และฟังก์ชันการทำงานเป็นและจะยังคงเป็นทรัพย์สินเฉพาะของ Laroun และผู้ให้อนุญาต บริการได้รับการคุ้มครองโดยลิขสิทธิ์ เครื่องหมายการค้า และกฎหมายอื่นๆ"
-                                : "The service and its original content, features, and functionality are and will remain the exclusive property of Laroun and its licensors. The service is protected by copyright, trademark, and other laws."}
+                            {language === "th"
+                                ? "บริการและเนื้อหาต้นฉบับ คุณสมบัติ และฟังก์ชันการทำงานเป็นและจะยังคงเป็นทรัพย์สินเฉพาะของ GATE169 และผู้ให้อนุญาต บริการได้รับการคุ้มครองโดยลิขสิทธิ์ เครื่องหมายการค้า และกฎหมายอื่นๆ"
+                                : "The service and its original content, features, and functionality are and will remain the exclusive property of GATE169 and its licensors. The service is protected by copyright, trademark, and other laws."}
                         </p>
                     </section>
 
@@ -141,9 +141,9 @@ export default function TermsOfServicePage() {
                             {language === "th" ? "8. ข้อจำกัดความรับผิด" : "8. Limitation of Liability"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
-                                ? "ไม่ว่าในกรณีใด Laroun ผู้อำนวยการ พนักงาน หุ้นส่วน ตัวแทน ผู้รับเหมา หรือบริษัทในเครือ จะไม่รับผิดชอบต่อความเสียหายทางอ้อม อุบัติเหตุ พิเศษ ผลสืบเนื่อง หรือเชิงลงโทษ รวมถึงแต่ไม่จำกัดเพียง การสูญเสียผลกำไร ข้อมูล การใช้งาน ค่าความนิยม หรือการสูญเสียที่ไม่มีตัวตนอื่นๆ"
-                                : "In no event shall Laroun, nor its directors, employees, partners, agents, contractors, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses."}
+                            {language === "th"
+                                ? "ไม่ว่าในกรณีใด GATE169 ผู้อำนวยการ พนักงาน หุ้นส่วน ตัวแทน ผู้รับเหมา หรือบริษัทในเครือ จะไม่รับผิดชอบต่อความเสียหายทางอ้อม อุบัติเหตุ พิเศษ ผลสืบเนื่อง หรือเชิงลงโทษ รวมถึงแต่ไม่จำกัดเพียง การสูญเสียผลกำไร ข้อมูล การใช้งาน ค่าความนิยม หรือการสูญเสียที่ไม่มีตัวตนอื่นๆ"
+                                : "In no event shall GATE169, nor its directors, employees, partners, agents, contractors, or affiliates, be liable for any indirect, incidental, special, consequential, or punitive damages, including without limitation, loss of profits, data, use, goodwill, or other intangible losses."}
                         </p>
                     </section>
 
@@ -152,7 +152,7 @@ export default function TermsOfServicePage() {
                             {language === "th" ? "9. การยกเลิก" : "9. Termination"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "เราอาจยกเลิกหรือระงับบัญชีของคุณทันทีโดยไม่ต้องแจ้งให้ทราบล่วงหน้าหรือรับผิดชอบ ด้วยเหตุผลใดก็ตาม รวมถึงแต่ไม่จำกัดเพียง หากคุณละเมิดข้อกำหนด"
                                 : "We may terminate or suspend your account immediately, without prior notice or liability, for any reason, including without limitation if you breach the Terms."}
                         </p>
@@ -163,7 +163,7 @@ export default function TermsOfServicePage() {
                             {language === "th" ? "10. การเปลี่ยนแปลงเงื่อนไข" : "10. Changes to Terms"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "เราขอสงวนสิทธิ์ในการแก้ไขหรือเปลี่ยนเงื่อนไขเหล่านี้ได้ตลอดเวลาตามดุลยพินิจของเราแต่เพียงผู้เดียว หากมีการแก้ไขเป็นสาระสำคัญ เราจะพยายามแจ้งให้ทราบล่วงหน้าอย่างน้อย 30 วันก่อนที่เงื่อนไขใหม่จะมีผลบังคับใช้"
                                 : "We reserve the right, at our sole discretion, to modify or replace these Terms at any time. If a revision is material, we will try to provide at least 30 days' notice prior to any new terms taking effect."}
                         </p>
@@ -174,12 +174,12 @@ export default function TermsOfServicePage() {
                             {language === "th" ? "11. ติดต่อเรา" : "11. Contact Us"}
                         </h2>
                         <p className="text-gray-700 mb-4">
-                            {language === "th" 
+                            {language === "th"
                                 ? "หากคุณมีคำถามเกี่ยวกับเงื่อนไขเหล่านี้ กรุณาติดต่อเราที่:"
                                 : "If you have any questions about these Terms, please contact us at:"}
                         </p>
                         <p className="text-gray-700">
-                            Email: <a href="mailto:legal@laroun.com" className="text-blue-600 hover:underline">legal@laroun.com</a>
+                            Email: <a href="mailto:legal@gate169.com" className="text-blue-600 hover:underline">legal@gate169.com</a>
                         </p>
                     </section>
                 </div>
@@ -194,7 +194,7 @@ export default function TermsOfServicePage() {
             {/* Footer */}
             <footer className="bg-white border-t py-6">
                 <div className="container mx-auto px-6 text-center text-sm text-gray-500">
-                    © 2024 Laroun. {language === "th" ? "สงวนลิขสิทธิ์." : "All rights reserved."}
+                    © 2025 GATE169. {language === "th" ? "สงวนลิขสิทธิ์." : "All rights reserved."}
                 </div>
             </footer>
         </div>

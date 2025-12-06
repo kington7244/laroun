@@ -1,5 +1,7 @@
 "use client"
 
+import { Zap } from "lucide-react"
+
 interface LogoProps {
     size?: "sm" | "md" | "lg" | "xl"
     showText?: boolean
@@ -7,8 +9,10 @@ interface LogoProps {
     variant?: "full" | "icon"
 }
 
-// Fixed blue color for logo (matching landing page)
+// Fixed blue color for logo background (matching landing page)
 const LOGO_BLUE = "#3b82f6"
+// Text color (dark gray/black)
+const LOGO_TEXT = "#111827"
 
 export default function Logo({ size = "md", showText = true, className = "", variant = "full" }: LogoProps) {
     const sizeMap = {
@@ -20,7 +24,7 @@ export default function Logo({ size = "md", showText = true, className = "", var
 
     const { icon: iconSize, text: textSize, gap } = sizeMap[size]
 
-    // Modern "L" logo design with creative geometric shape
+    // Lightning Bolt Logo Design
     const LogoIcon = () => (
         <svg
             width={iconSize}
@@ -39,30 +43,15 @@ export default function Logo({ size = "md", showText = true, className = "", var
                 rx="12"
                 fill={LOGO_BLUE}
             />
-            
-            {/* Stylized "L" letter with modern design */}
+
+            {/* Lightning Bolt Icon (Filled White) */}
+            {/* Scaled down ~85% */}
             <path
-                d="M16 12V32H32V28H20V12H16Z"
+                d="M25 9L8 28H22L21 39L38 19H24L25 9Z"
                 fill="white"
-                fillOpacity="0.9"
-            />
-            
-            {/* Decorative diagonal line for modern touch */}
-            <path
-                d="M26 12L36 22"
                 stroke="white"
-                strokeWidth="3"
-                strokeLinecap="round"
-                strokeOpacity="0.7"
-            />
-            
-            {/* Small accent dot */}
-            <circle
-                cx="36"
-                cy="12"
-                r="3"
-                fill="white"
-                fillOpacity="0.9"
+                strokeWidth="2"
+                strokeLinejoin="round"
             />
         </svg>
     )
@@ -75,25 +64,25 @@ export default function Logo({ size = "md", showText = true, className = "", var
         <div className={`flex items-center ${gap} ${className}`}>
             <LogoIcon />
             {showText && (
-                <span 
-                    className={`font-black ${textSize} tracking-tight`}
-                    style={{ 
-                        color: LOGO_BLUE,
+                <span
+                    className={`font-semibold ${textSize} tracking-tight`}
+                    style={{
+                        color: LOGO_TEXT,
                         fontFamily: "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif",
                         letterSpacing: "-0.02em"
                     }}
                 >
-                    Laroun
+                    GATE169
                 </span>
             )}
         </div>
     )
 }
 
-// Static version without theme context (for places where context isn't available)
-export function LogoStatic({ 
-    size = "md", 
-    showText = true, 
+// Static version without theme context
+export function LogoStatic({
+    size = "md",
+    showText = true,
     className = ""
 }: LogoProps) {
     const sizeMap = {
@@ -116,20 +105,26 @@ export function LogoStatic({
                 className="flex-shrink-0"
             >
                 <rect x="2" y="2" width="44" height="44" rx="12" fill={LOGO_BLUE} />
-                <path d="M16 12V32H32V28H20V12H16Z" fill="white" fillOpacity="0.9" />
-                <path d="M26 12L36 22" stroke="white" strokeWidth="3" strokeLinecap="round" strokeOpacity="0.7" />
-                <circle cx="36" cy="12" r="3" fill="white" fillOpacity="0.9" />
+                {/* Lightning Bolt Icon (Filled White) */}
+                {/* Scaled down ~85% */}
+                <path
+                    d="M25 9L8 28H22L21 39L38 19H24L25 9Z"
+                    fill="white"
+                    stroke="white"
+                    strokeWidth="2"
+                    strokeLinejoin="round"
+                />
             </svg>
             {showText && (
-                <span 
-                    className={`font-black ${textSize} tracking-tight`}
-                    style={{ 
-                        color: LOGO_BLUE,
+                <span
+                    className={`font-semibold ${textSize} tracking-tight`}
+                    style={{
+                        color: LOGO_TEXT,
                         fontFamily: "'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif",
                         letterSpacing: "-0.02em"
                     }}
                 >
-                    Laroun
+                    GATE169
                 </span>
             )}
         </div>

@@ -19,8 +19,14 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
-import { RefreshCw, Search, MoreHorizontal, Download, ExternalLink, FileText, ChevronDown, Check } from "lucide-react"
+import { RefreshCw, Search, MoreHorizontal, Download, ExternalLink, FileText, ChevronDown, Check, Lock } from "lucide-react"
 import { useLanguage } from "@/contexts/LanguageContext"
+import {
+    Tabs,
+    TabsContent,
+    TabsList,
+    TabsTrigger,
+} from "@/components/ui/tabs"
 import { useTheme } from "@/contexts/ThemeContext"
 import { toast } from "sonner"
 import { format, subDays, addDays } from "date-fns"
@@ -124,24 +130,24 @@ export default function PaymentsPage() {
 
     const fetchTransactions = async () => {
         if (selectedAccountIds.length === 0) return
-        
+
         setIsLoading(true)
         try {
             const res = await fetch('/api/ads/payments', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
+                body: JSON.stringify({
                     accountIds: selectedAccountIds,
                     startDate: dateRange?.from ? format(dateRange.from, 'yyyy-MM-dd') : undefined,
                     endDate: dateRange?.to ? format(dateRange.to, 'yyyy-MM-dd') : undefined
                 })
             })
             const data = await res.json()
-            
+
             if (data.error) {
                 throw new Error(data.error)
             }
-            
+
             setTransactions(data.transactions || [])
         } catch (error: any) {
             console.error('Error fetching transactions:', error)
@@ -152,7 +158,7 @@ export default function PaymentsPage() {
     }
 
     const toggleAccount = (accountId: string) => {
-        setSelectedAccountIds(prev => 
+        setSelectedAccountIds(prev =>
             prev.includes(accountId)
                 ? prev.filter(id => id !== accountId)
                 : [...prev, accountId]
@@ -168,9 +174,9 @@ export default function PaymentsPage() {
     }
 
     const formatCurrency = (amount: number, currency: string) => {
-        return new Intl.NumberFormat('en-US', { 
-            style: 'currency', 
-            currency: currency || 'USD' 
+        return new Intl.NumberFormat('en-US', {
+            style: 'currency',
+            currency: currency || 'USD'
         }).format(amount / 100) // Facebook returns amount in cents
     }
 
@@ -199,234 +205,261 @@ export default function PaymentsPage() {
         )
     })
 
-    return (
-        <div className="h-full">
-            <Card className="h-full flex flex-col">
-                <CardContent className="flex-1 overflow-hidden pt-6">
-                    <div className="flex flex-col gap-4 h-full">
-                        {/* Header */}
-                        <div className="flex items-center justify-between">
-                            <h1 className="text-2xl font-bold">Payment Activity</h1>
-                            <div className="flex items-center gap-2">
-                                {/* Account Selector */}
-                                <Popover>
-                                    <PopoverTrigger asChild>
-                                        <Button variant="outline" className="min-w-[200px] justify-between">
-                                            {selectedAccountIds.length === 0 
-                                                ? "Select Accounts" 
-                                                : `${selectedAccountIds.length} account${selectedAccountIds.length > 1 ? 's' : ''} selected`
-                                            }
-                                            <ChevronDown className="ml-2 h-4 w-4" />
-                                        </Button>
-                                    </PopoverTrigger>
-                                    <PopoverContent className="w-[300px] p-0" align="end">
-                                        <div className="p-2 border-b">
-                                            <Button 
-                                                variant="ghost" 
-                                                size="sm" 
-                                                className="w-full justify-start"
-                                                onClick={toggleAllAccounts}
-                                            >
-                                                <div className={cn(
-                                                    "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border",
-                                                    selectedAccountIds.length === accounts.length
-                                                        ? "bg-primary border-primary text-primary-foreground"
-                                                        : "opacity-50"
-                                                )}>
-                                                    {selectedAccountIds.length === accounts.length && (
-                                                        <Check className="h-3 w-3" />
-                                                    )}
-                                                </div>
-                                                Select All
-                                            </Button>
-                                        </div>
-                                        <div className="max-h-[300px] overflow-y-auto p-2">
-                                            {isAccountsLoading ? (
-                                                <div className="text-center py-4 text-muted-foreground">
-                                                    Loading accounts...
-                                                </div>
-                                            ) : accounts.length === 0 ? (
-                                                <div className="text-center py-4 text-muted-foreground">
-                                                    No accounts found
-                                                </div>
-                                            ) : (
-                                                accounts.map((account) => (
-                                                    <div
-                                                        key={account.id}
-                                                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
-                                                        onClick={() => toggleAccount(account.id)}
-                                                    >
-                                                        <div className={cn(
-                                                            "flex h-4 w-4 items-center justify-center rounded-sm border",
-                                                            selectedAccountIds.includes(account.id)
-                                                                ? "bg-primary border-primary text-primary-foreground"
-                                                                : "opacity-50"
-                                                        )}>
-                                                            {selectedAccountIds.includes(account.id) && (
-                                                                <Check className="h-3 w-3" />
-                                                            )}
-                                                        </div>
-                                                        <span className="flex-1 truncate text-sm">{account.name}</span>
-                                                        <span className="text-xs text-muted-foreground">{account.currency}</span>
-                                                    </div>
-                                                ))
+    const PaymentActivityContent = () => (
+        <div className="flex flex-col gap-4 h-full p-4">
+            <div className="flex items-center justify-end gap-2">
+                {/* Account Selector */}
+                <Popover>
+                    <PopoverTrigger asChild>
+                        <Button variant="outline" className="min-w-[200px] justify-between">
+                            {selectedAccountIds.length === 0
+                                ? "Select Accounts"
+                                : `${selectedAccountIds.length} account${selectedAccountIds.length > 1 ? 's' : ''} selected`
+                            }
+                            <ChevronDown className="ml-2 h-4 w-4" />
+                        </Button>
+                    </PopoverTrigger>
+                    <PopoverContent className="w-[300px] p-0" align="end">
+                        <div className="p-2 border-b">
+                            <Button
+                                variant="ghost"
+                                size="sm"
+                                className="w-full justify-start"
+                                onClick={toggleAllAccounts}
+                            >
+                                <div className={cn(
+                                    "mr-2 flex h-4 w-4 items-center justify-center rounded-sm border",
+                                    selectedAccountIds.length === accounts.length
+                                        ? "bg-primary border-primary text-primary-foreground"
+                                        : "opacity-50"
+                                )}>
+                                    {selectedAccountIds.length === accounts.length && (
+                                        <Check className="h-3 w-3" />
+                                    )}
+                                </div>
+                                Select All
+                            </Button>
+                        </div>
+                        <div className="max-h-[300px] overflow-y-auto p-2">
+                            {isAccountsLoading ? (
+                                <div className="text-center py-4 text-muted-foreground">
+                                    Loading accounts...
+                                </div>
+                            ) : accounts.length === 0 ? (
+                                <div className="text-center py-4 text-muted-foreground">
+                                    No accounts found
+                                </div>
+                            ) : (
+                                accounts.map((account) => (
+                                    <div
+                                        key={account.id}
+                                        className="flex items-center gap-2 px-2 py-1.5 rounded hover:bg-muted cursor-pointer"
+                                        onClick={() => toggleAccount(account.id)}
+                                    >
+                                        <div className={cn(
+                                            "flex h-4 w-4 items-center justify-center rounded-sm border",
+                                            selectedAccountIds.includes(account.id)
+                                                ? "bg-primary border-primary text-primary-foreground"
+                                                : "opacity-50"
+                                        )}>
+                                            {selectedAccountIds.includes(account.id) && (
+                                                <Check className="h-3 w-3" />
                                             )}
                                         </div>
-                                    </PopoverContent>
-                                </Popover>
-
-                                {/* Date Range Picker */}
-                                <DatePickerWithRange
-                                    date={dateRange}
-                                    setDate={setDateRange}
-                                />
-
-                                {/* Search */}
-                                <div className="relative w-48">
-                                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-                                    <Input
-                                        placeholder="Search..."
-                                        value={searchQuery}
-                                        onChange={(e) => setSearchQuery(e.target.value)}
-                                        className="pl-8 h-9"
-                                    />
-                                </div>
-
-                                {/* Refresh */}
-                                <Button 
-                                    variant="outline" 
-                                    size="icon" 
-                                    className="h-9 w-9"
-                                    onClick={fetchTransactions}
-                                    disabled={selectedAccountIds.length === 0 || isLoading}
-                                >
-                                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
-                                </Button>
-                            </div>
+                                        <span className="flex-1 truncate text-sm">{account.name}</span>
+                                        <span className="text-xs text-muted-foreground">{account.currency}</span>
+                                    </div>
+                                ))
+                            )}
                         </div>
+                    </PopoverContent>
+                </Popover>
 
-                        {/* Table */}
-                        <div className="flex-1 overflow-auto rounded-lg border">
-                            <Table>
-                                <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
-                                    <TableRow>
-                                        <TableHead className="font-semibold">Transaction ID</TableHead>
-                                        <TableHead className="font-semibold">Account</TableHead>
-                                        <TableHead className="font-semibold">Date</TableHead>
-                                        <TableHead className="font-semibold text-right">Amount</TableHead>
-                                        <TableHead className="font-semibold">Payment Method</TableHead>
-                                        <TableHead className="font-semibold">Payment Status</TableHead>
-                                        <TableHead className="font-semibold">VAT Invoice ID</TableHead>
-                                        <TableHead className="font-semibold text-center w-[80px]">Action</TableHead>
-                                    </TableRow>
-                                </TableHeader>
-                                <TableBody>
-                                    {isLoading ? (
-                                        <TableRow>
-                                            <TableCell colSpan={8} className="text-center py-10">
-                                                <div className="flex items-center justify-center gap-2">
-                                                    <RefreshCw className="h-4 w-4 animate-spin" />
-                                                    <span>Loading transactions...</span>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : selectedAccountIds.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                                                Please select at least one account to view payment activity
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : filteredTransactions.length === 0 ? (
-                                        <TableRow>
-                                            <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
-                                                No payment transactions found
-                                            </TableCell>
-                                        </TableRow>
-                                    ) : (
-                                        filteredTransactions.map((tx) => (
-                                            <TableRow key={tx.id} className="hover:bg-muted/50">
-                                                <TableCell className="font-mono text-sm">
-                                                    {tx.transactionId}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium truncate max-w-[150px]">{tx.accountName}</span>
-                                                        <span className="text-xs text-muted-foreground">{tx.accountId}</span>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    {tx.date ? format(new Date(tx.date), 'MMM dd, yyyy HH:mm') : '-'}
-                                                </TableCell>
-                                                <TableCell className="text-right font-medium">
-                                                    {formatCurrency(tx.amount, tx.currency)}
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="flex flex-col">
-                                                        <span className="font-medium">{tx.paymentMethod || '-'}</span>
-                                                        {tx.referenceNumber && (
-                                                            <span className="text-xs text-muted-foreground font-mono">{tx.referenceNumber}</span>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>{getStatusBadge(tx.paymentStatus)}</TableCell>
-                                                <TableCell className="font-mono text-sm">
-                                                    {tx.vatInvoiceId || '-'}
-                                                </TableCell>
-                                                <TableCell className="text-center">
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger asChild>
-                                                            <Button variant="ghost" size="icon" className="h-8 w-8">
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent align="end">
-                                                            <DropdownMenuItem onClick={() => {
-                                                                navigator.clipboard.writeText(tx.transactionId)
-                                                                toast.success('Transaction ID copied')
-                                                            }}>
-                                                                <FileText className="mr-2 h-4 w-4" />
-                                                                Copy Transaction ID
-                                                            </DropdownMenuItem>
-                                                            {tx.vatInvoiceId && (
-                                                                <DropdownMenuItem onClick={() => {
-                                                                    window.open(`https://business.facebook.com/billing/invoices?asset_id=${tx.accountId}`, '_blank')
-                                                                }}>
-                                                                    <Download className="mr-2 h-4 w-4" />
-                                                                    Download Invoice
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                            <DropdownMenuItem onClick={() => {
-                                                                window.open(`https://business.facebook.com/billing/transactions?asset_id=${tx.accountId}`, '_blank')
-                                                            }}>
-                                                                <ExternalLink className="mr-2 h-4 w-4" />
-                                                                View in Facebook
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </TableCell>
-                                            </TableRow>
-                                        ))
-                                    )}
-                                </TableBody>
-                            </Table>
-                        </div>
+                {/* Date Range Picker */}
+                <DatePickerWithRange
+                    date={dateRange}
+                    setDate={setDateRange}
+                />
 
-                        {/* Footer Info */}
-                        {filteredTransactions.length > 0 && (
-                            <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
-                                <span>
-                                    Showing {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''} 
-                                    {selectedAccountIds.length > 0 && ` from ${selectedAccountIds.length} account${selectedAccountIds.length > 1 ? 's' : ''}`}
-                                </span>
-                                <span>
-                                    Total: {formatCurrency(
-                                        filteredTransactions.reduce((sum, tx) => sum + tx.amount, 0),
-                                        filteredTransactions[0]?.currency || 'USD'
-                                    )}
-                                </span>
-                            </div>
+                {/* Search */}
+                <div className="relative w-48">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                        placeholder="Search..."
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        className="pl-8 h-9"
+                    />
+                </div>
+
+                {/* Refresh */}
+                <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={fetchTransactions}
+                    disabled={selectedAccountIds.length === 0 || isLoading}
+                >
+                    <RefreshCw className={cn("h-4 w-4", isLoading && "animate-spin")} />
+                </Button>
+            </div>
+
+            {/* Table */}
+            <div className="flex-1 overflow-auto rounded-lg border">
+                <Table>
+                    <TableHeader className="sticky top-0 bg-muted/80 backdrop-blur-sm z-10">
+                        <TableRow>
+                            <TableHead className="font-semibold">Transaction ID</TableHead>
+                            <TableHead className="font-semibold">Account</TableHead>
+                            <TableHead className="font-semibold">Date</TableHead>
+                            <TableHead className="font-semibold text-right">Amount</TableHead>
+                            <TableHead className="font-semibold">Payment Method</TableHead>
+                            <TableHead className="font-semibold">Payment Status</TableHead>
+                            <TableHead className="font-semibold">VAT Invoice ID</TableHead>
+                            <TableHead className="font-semibold text-center w-[80px]">Action</TableHead>
+                        </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                        {isLoading ? (
+                            <TableRow>
+                                <TableCell colSpan={8} className="text-center py-10">
+                                    <div className="flex items-center justify-center gap-2">
+                                        <RefreshCw className="h-4 w-4 animate-spin" />
+                                        <span>Loading transactions...</span>
+                                    </div>
+                                </TableCell>
+                            </TableRow>
+                        ) : selectedAccountIds.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                                    Please select at least one account to view payment activity
+                                </TableCell>
+                            </TableRow>
+                        ) : filteredTransactions.length === 0 ? (
+                            <TableRow>
+                                <TableCell colSpan={8} className="text-center py-10 text-muted-foreground">
+                                    No payment transactions found
+                                </TableCell>
+                            </TableRow>
+                        ) : (
+                            filteredTransactions.map((tx) => (
+                                <TableRow key={tx.id} className="hover:bg-muted/50">
+                                    <TableCell className="font-mono text-sm">
+                                        {tx.transactionId}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium truncate max-w-[150px]">{tx.accountName}</span>
+                                            <span className="text-xs text-muted-foreground">{tx.accountId}</span>
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>
+                                        {tx.date ? format(new Date(tx.date), 'MMM dd, yyyy HH:mm') : '-'}
+                                    </TableCell>
+                                    <TableCell className="text-right font-medium">
+                                        {formatCurrency(tx.amount, tx.currency)}
+                                    </TableCell>
+                                    <TableCell>
+                                        <div className="flex flex-col">
+                                            <span className="font-medium">{tx.paymentMethod || '-'}</span>
+                                            {tx.referenceNumber && (
+                                                <span className="text-xs text-muted-foreground font-mono">{tx.referenceNumber}</span>
+                                            )}
+                                        </div>
+                                    </TableCell>
+                                    <TableCell>{getStatusBadge(tx.paymentStatus)}</TableCell>
+                                    <TableCell className="font-mono text-sm">
+                                        {tx.vatInvoiceId || '-'}
+                                    </TableCell>
+                                    <TableCell className="text-center">
+                                        <DropdownMenu>
+                                            <DropdownMenuTrigger asChild>
+                                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                                    <MoreHorizontal className="h-4 w-4" />
+                                                </Button>
+                                            </DropdownMenuTrigger>
+                                            <DropdownMenuContent align="end">
+                                                <DropdownMenuItem onClick={() => {
+                                                    navigator.clipboard.writeText(tx.transactionId)
+                                                    toast.success('Transaction ID copied')
+                                                }}>
+                                                    <FileText className="mr-2 h-4 w-4" />
+                                                    Copy Transaction ID
+                                                </DropdownMenuItem>
+                                                {tx.vatInvoiceId && (
+                                                    <DropdownMenuItem onClick={() => {
+                                                        window.open(`https://business.facebook.com/billing/invoices?asset_id=${tx.accountId}`, '_blank')
+                                                    }}>
+                                                        <Download className="mr-2 h-4 w-4" />
+                                                        Download Invoice
+                                                    </DropdownMenuItem>
+                                                )}
+                                                <DropdownMenuItem onClick={() => {
+                                                    window.open(`https://business.facebook.com/billing/transactions?asset_id=${tx.accountId}`, '_blank')
+                                                }}>
+                                                    <ExternalLink className="mr-2 h-4 w-4" />
+                                                    View in Facebook
+                                                </DropdownMenuItem>
+                                            </DropdownMenuContent>
+                                        </DropdownMenu>
+                                    </TableCell>
+                                </TableRow>
+                            ))
                         )}
-                    </div>
+                    </TableBody>
+                </Table>
+            </div>
+
+            {/* Footer Info */}
+            {filteredTransactions.length > 0 && (
+                <div className="flex items-center justify-between text-sm text-muted-foreground px-1">
+                    <span>
+                        Showing {filteredTransactions.length} transaction{filteredTransactions.length !== 1 ? 's' : ''}
+                        {selectedAccountIds.length > 0 && ` from ${selectedAccountIds.length} account${selectedAccountIds.length > 1 ? 's' : ''}`}
+                    </span>
+                    <span>
+                        Total: {formatCurrency(
+                            filteredTransactions.reduce((sum, tx) => sum + tx.amount, 0),
+                            filteredTransactions[0]?.currency || 'USD'
+                        )}
+                    </span>
+                </div>
+            )}
+        </div>
+    )
+
+    return (
+        <div className="h-full">
+            <Card className="h-full flex flex-col rounded-none shadow-none border-0 sm:border sm:rounded-2xl">
+                <CardContent className="h-full p-0 flex flex-col">
+                    <Tabs defaultValue="payment" className="h-full flex flex-col">
+                        <div className="border-b px-6 py-4">
+                            <TabsList className="w-fit">
+                                <TabsTrigger value="payment">Payment</TabsTrigger>
+                                <TabsTrigger value="activity">Payment Activity</TabsTrigger>
+                            </TabsList>
+                        </div>
+
+                        <div className="flex-1 overflow-hidden">
+                            {/* Tab 1: Access Denied */}
+                            <TabsContent value="payment" className="h-full mt-0 p-6">
+                                <Card className="h-full flex flex-col items-center justify-center text-center p-8 bg-muted/20 border-dashed">
+                                    <div className="p-4 rounded-full bg-red-100 mb-4">
+                                        <Lock className="w-8 h-8 text-red-600" />
+                                    </div>
+                                    <h2 className="text-xl font-semibold mb-2 text-red-600">Access Denied</h2>
+                                    <p className="text-red-500 max-w-sm">
+                                        You don't have permission to access this page. Please contact your administrator if you believe this is an error.
+                                    </p>
+                                </Card>
+                            </TabsContent>
+
+                            {/* Tab 2: Existing Payment Activity */}
+                            <TabsContent value="activity" className="h-full mt-0">
+                                <PaymentActivityContent />
+                            </TabsContent>
+                        </div>
+                    </Tabs>
                 </CardContent>
             </Card>
         </div>

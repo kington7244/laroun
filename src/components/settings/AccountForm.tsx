@@ -19,19 +19,14 @@ import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { toast } from "sonner"
 import { Loader2, Camera, Trash2 } from "lucide-react"
+import { useLanguage } from "@/contexts/LanguageContext"
 
-const accountFormSchema = z.object({
-    name: z
-        .string()
-        .min(2, {
-            message: "ชื่อต้องมีอย่างน้อย 2 ตัวอักษร",
-        })
-        .max(50, {
-            message: "ชื่อต้องไม่เกิน 50 ตัวอักษร",
-        }),
+// Schema for type inference
+const accountFormSchemaBase = z.object({
+    name: z.string().min(2).max(50),
 })
 
-type AccountFormValues = z.infer<typeof accountFormSchema>
+type AccountFormValues = z.infer<typeof accountFormSchemaBase>
 
 interface UserProfile {
     id: string
@@ -43,12 +38,24 @@ interface UserProfile {
 }
 
 export function AccountForm() {
+    const { t } = useLanguage()
     const { update: updateSession } = useSession()
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
     const [uploading, setUploading] = useState(false)
     const [profile, setProfile] = useState<UserProfile | null>(null)
     const fileInputRef = useRef<HTMLInputElement>(null)
+
+    const accountFormSchema = z.object({
+        name: z
+            .string()
+            .min(2, {
+                message: t.settings.account.validation.nameMin,
+            })
+            .max(50, {
+                message: t.settings.account.validation.nameMax,
+            }),
+    })
 
     const form = useForm<AccountFormValues>({
         resolver: zodResolver(accountFormSchema),
@@ -75,7 +82,7 @@ export function AccountForm() {
             }
         } catch (error) {
             console.error("Failed to load profile:", error)
-            toast.error("ไม่สามารถโหลดข้อมูลโปรไฟล์ได้")
+            toast.error(t.settings.account.toast.loadError)
         } finally {
             setLoading(false)
         }
@@ -95,14 +102,14 @@ export function AccountForm() {
                 setProfile(prev => prev ? { ...prev, name: result.user.name } : null)
                 // Update session to reflect new name across the app
                 await updateSession({ name: result.user.name })
-                toast.success("บันทึกชื่อเรียบร้อยแล้ว")
+                toast.success(t.settings.account.toast.saveSuccess)
             } else {
                 const error = await res.json()
-                toast.error(error.error || "ไม่สามารถบันทึกได้")
+                toast.error(error.error || t.settings.account.toast.saveError)
             }
         } catch (error) {
             console.error("Failed to save profile:", error)
-            toast.error("เกิดข้อผิดพลาด")
+            toast.error(t.settings.account.toast.error)
         } finally {
             setSaving(false)
         }
@@ -119,13 +126,13 @@ export function AccountForm() {
         // Validate file
         const allowedTypes = ["image/jpeg", "image/png", "image/gif", "image/webp"]
         if (!allowedTypes.includes(file.type)) {
-            toast.error("รองรับเฉพาะไฟล์ JPEG, PNG, GIF และ WebP เท่านั้น")
+            toast.error(t.settings.account.validation.fileType)
             return
         }
 
         const maxSize = 5 * 1024 * 1024 // 5MB
         if (file.size > maxSize) {
-            toast.error("ไฟล์ใหญ่เกินไป (สูงสุด 5MB)")
+            toast.error(t.settings.account.validation.fileSize)
             return
         }
 
@@ -144,14 +151,14 @@ export function AccountForm() {
                 setProfile(prev => prev ? { ...prev, image: result.imageUrl } : null)
                 // Update session to reflect new image across the app
                 await updateSession({ image: result.imageUrl })
-                toast.success("อัปโหลดรูปโปรไฟล์เรียบร้อยแล้ว")
+                toast.success(t.settings.account.toast.uploadSuccess)
             } else {
                 const error = await res.json()
-                toast.error(error.error || "ไม่สามารถอัปโหลดได้")
+                toast.error(error.error || t.settings.account.toast.uploadError)
             }
         } catch (error) {
             console.error("Failed to upload image:", error)
-            toast.error("เกิดข้อผิดพลาด")
+            toast.error(t.settings.account.toast.error)
         } finally {
             setUploading(false)
             // Reset input
@@ -162,7 +169,7 @@ export function AccountForm() {
     }
 
     const handleRemoveImage = async () => {
-        if (!confirm("ต้องการลบรูปโปรไฟล์?")) return
+        if (!confirm(t.settings.account.toast.deleteConfirm)) return
 
         try {
             setUploading(true)
@@ -174,13 +181,13 @@ export function AccountForm() {
                 setProfile(prev => prev ? { ...prev, image: null } : null)
                 // Update session to reflect removed image across the app
                 await updateSession({ image: null })
-                toast.success("ลบรูปโปรไฟล์เรียบร้อยแล้ว")
+                toast.success(t.settings.account.toast.deleteSuccess)
             } else {
-                toast.error("ไม่สามารถลบรูปได้")
+                toast.error(t.settings.account.toast.deleteError)
             }
         } catch (error) {
             console.error("Failed to remove image:", error)
-            toast.error("เกิดข้อผิดพลาด")
+            toast.error(t.settings.account.toast.error)
         } finally {
             setUploading(false)
         }
@@ -208,9 +215,9 @@ export function AccountForm() {
                             {initial}
                         </AvatarFallback>
                     </Avatar>
-                    
+
                     {/* Overlay on hover */}
-                    <div 
+                    <div
                         className="absolute inset-0 rounded-full bg-black/50 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
                         onClick={handleImageClick}
                     >
@@ -247,7 +254,7 @@ export function AccountForm() {
                             ) : (
                                 <Camera className="h-4 w-4 mr-2" />
                             )}
-                            เปลี่ยนรูป
+                            {t.settings.account.changePhoto}
                         </Button>
                         {profile?.image && (
                             <Button
@@ -259,12 +266,12 @@ export function AccountForm() {
                                 className="text-destructive hover:text-destructive"
                             >
                                 <Trash2 className="h-4 w-4 mr-2" />
-                                ลบรูป
+                                {t.settings.account.removePhoto}
                             </Button>
                         )}
                     </div>
                     <p className="text-xs text-muted-foreground mt-2">
-                        รองรับ JPEG, PNG, GIF, WebP (สูงสุด 5MB)
+                        {t.settings.account.photoRequirements}
                     </p>
                 </div>
             </div>
@@ -277,12 +284,12 @@ export function AccountForm() {
                         name="name"
                         render={({ field }) => (
                             <FormItem>
-                                <FormLabel>ชื่อแสดงในระบบ</FormLabel>
+                                <FormLabel>{t.settings.account.displayName}</FormLabel>
                                 <FormControl>
-                                    <Input placeholder="ใส่ชื่อของคุณ" {...field} />
+                                    <Input placeholder={t.settings.account.displayNamePlaceholder} {...field} />
                                 </FormControl>
                                 <FormDescription>
-                                    ชื่อนี้จะแสดงในระบบและในอีเมลที่ส่งถึงคุณ
+                                    {t.settings.account.displayNameDesc}
                                 </FormDescription>
                                 <FormMessage />
                             </FormItem>
@@ -291,34 +298,34 @@ export function AccountForm() {
 
                     {/* Email (read-only) */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">อีเมล</label>
+                        <label className="text-sm font-medium">{t.settings.account.email}</label>
                         <Input value={profile?.email || ""} disabled className="bg-muted" />
                         <p className="text-xs text-muted-foreground">
-                            อีเมลไม่สามารถเปลี่ยนแปลงได้
+                            {t.settings.account.emailDesc}
                         </p>
                     </div>
 
                     {/* Role (read-only) */}
                     <div className="space-y-2">
-                        <label className="text-sm font-medium">บทบาท</label>
-                        <Input 
+                        <label className="text-sm font-medium">{t.settings.account.role}</label>
+                        <Input
                             value={
-                                profile?.role === 'host' ? 'Host (เจ้าของระบบ)' :
-                                profile?.role === 'admin' ? 'Admin (ผู้ดูแล)' :
-                                'Staff (พนักงาน)'
-                            } 
-                            disabled 
-                            className="bg-muted" 
+                                profile?.role === 'host' ? t.settings.account.roleHost :
+                                    profile?.role === 'admin' ? t.settings.account.roleAdmin :
+                                        t.settings.account.roleStaff
+                            }
+                            disabled
+                            className="bg-muted"
                         />
                     </div>
 
                     {/* Facebook Name (if connected) */}
                     {profile?.facebookName && (
                         <div className="space-y-2">
-                            <label className="text-sm font-medium">ชื่อ Facebook</label>
+                            <label className="text-sm font-medium">{t.settings.account.facebookName}</label>
                             <Input value={profile.facebookName} disabled className="bg-muted" />
                             <p className="text-xs text-muted-foreground">
-                                ชื่อจาก Facebook ที่เชื่อมต่อ
+                                {t.settings.account.facebookNameDesc}
                             </p>
                         </div>
                     )}
@@ -327,10 +334,10 @@ export function AccountForm() {
                         {saving ? (
                             <>
                                 <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                                กำลังบันทึก...
+                                {t.settings.account.saving}
                             </>
                         ) : (
-                            "บันทึกการเปลี่ยนแปลง"
+                            t.settings.account.save
                         )}
                     </Button>
                 </form>

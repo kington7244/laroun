@@ -14,6 +14,7 @@ import { signIn } from "next-auth/react"
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Badge } from "@/components/ui/badge"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 interface FacebookAccount {
     isConnected: boolean
@@ -27,9 +28,10 @@ interface ConnectFormProps {
 }
 
 export function ConnectForm({ facebookAccount }: ConnectFormProps) {
+    const { t, language } = useLanguage()
     const [isLoading, setIsLoading] = useState(false)
     const router = useRouter()
-    
+
     // Support both old and new props format
     const account: FacebookAccount = facebookAccount || { isConnected: false }
     const isConnected = account.isConnected
@@ -39,7 +41,7 @@ export function ConnectForm({ facebookAccount }: ConnectFormProps) {
         try {
             await signIn("facebook", { callbackUrl: "/settings?tab=connect" })
         } catch (error) {
-            toast.error("Failed to connect to Facebook")
+            toast.error(t.settings.connect.messages.connectError)
         } finally {
             setIsLoading(false)
         }
@@ -54,10 +56,10 @@ export function ConnectForm({ facebookAccount }: ConnectFormProps) {
 
             if (!response.ok) throw new Error("Failed to disconnect")
 
-            toast.success("Disconnected from Facebook")
+            toast.success(t.settings.connect.messages.disconnectConfirm)
             router.refresh()
         } catch (error) {
-            toast.error("Failed to disconnect")
+            toast.error(t.settings.connect.messages.disconnectError)
         } finally {
             setIsLoading(false)
         }
@@ -79,9 +81,9 @@ export function ConnectForm({ facebookAccount }: ConnectFormProps) {
     const formatExpiry = () => {
         if (!account.tokenExpires) return 'Unknown'
         const date = new Date(account.tokenExpires)
-        return date.toLocaleDateString('th-TH', { 
-            year: 'numeric', 
-            month: 'long', 
+        return date.toLocaleDateString(language === 'th' ? 'th-TH' : 'en-US', {
+            year: 'numeric',
+            month: 'long',
             day: 'numeric',
             hour: '2-digit',
             minute: '2-digit'
@@ -93,21 +95,20 @@ export function ConnectForm({ facebookAccount }: ConnectFormProps) {
             <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                     <Facebook className="h-5 w-5 text-blue-600" />
-                    Facebook Ads
+                    {t.settings.connect.facebookAds}
                 </CardTitle>
                 <CardDescription>
-                    Connect your Facebook account to manage your ads.
+                    {t.settings.connect.facebookAdsDesc}
                 </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
                 {/* Connection Status Card */}
-                <div className={`flex items-start space-x-4 rounded-xl border p-4 ${
-                    isConnected 
-                        ? isTokenExpired() 
-                            ? 'border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30' 
+                <div className={`flex items-start space-x-4 rounded-xl border p-4 ${isConnected
+                        ? isTokenExpired()
+                            ? 'border-yellow-200 bg-yellow-50 dark:border-yellow-900 dark:bg-yellow-950/30'
                             : 'border-green-200 bg-green-50 dark:border-green-900 dark:bg-green-950/30'
                         : 'border-gray-200 bg-gray-50 dark:border-gray-800 dark:bg-gray-900/30'
-                }`}>
+                    }`}>
                     {isConnected ? (
                         isTokenExpired() ? (
                             <AlertCircle className="h-6 w-6 text-yellow-600 mt-0.5" />
@@ -120,20 +121,20 @@ export function ConnectForm({ facebookAccount }: ConnectFormProps) {
                     <div className="flex-1 space-y-1">
                         <div className="flex items-center gap-2">
                             <p className="text-sm font-medium leading-none">
-                                Facebook Marketing API
+                                {t.settings.connect.marketingApi}
                             </p>
                             {isConnected && (
                                 <Badge variant={isTokenExpired() ? "destructive" : "default"} className="text-xs">
-                                    {isTokenExpired() ? "Token Expired" : "Connected"}
+                                    {isTokenExpired() ? t.settings.connect.status.tokenExpired : t.settings.connect.status.connected}
                                 </Badge>
                             )}
                         </div>
                         <p className="text-sm text-muted-foreground">
                             {isConnected
                                 ? isTokenExpired()
-                                    ? "Your access token has expired. Please reconnect."
-                                    : "Your account is connected and ready to use."
-                                : "Not connected - Connect to manage your Facebook Ads"}
+                                    ? t.settings.connect.messages.tokenExpired
+                                    : t.settings.connect.messages.connectedReady
+                                : t.settings.connect.messages.notConnected}
                         </p>
                     </div>
                     <Button
@@ -142,7 +143,7 @@ export function ConnectForm({ facebookAccount }: ConnectFormProps) {
                         disabled={isLoading}
                         className={isConnected ? "border-red-200 text-red-600 hover:bg-red-50 hover:text-red-700" : ""}
                     >
-                        {isLoading ? "Loading..." : isConnected ? "Disconnect" : "Connect"}
+                        {isLoading ? t.settings.connect.buttons.loading : isConnected ? t.settings.connect.buttons.disconnect : t.settings.connect.buttons.connect}
                     </Button>
                 </div>
 
@@ -153,17 +154,17 @@ export function ConnectForm({ facebookAccount }: ConnectFormProps) {
                         <div className="rounded-xl border bg-background p-4 space-y-3">
                             <h4 className="text-sm font-medium flex items-center gap-2">
                                 <Shield className="h-4 w-4 text-muted-foreground" />
-                                Account Details
+                                {t.settings.connect.accountDetails}
                             </h4>
-                            
+
                             <div className="grid gap-2 text-sm">
                                 <div className="flex justify-between items-center py-1.5 border-b border-dashed">
-                                    <span className="text-muted-foreground">Facebook ID</span>
+                                    <span className="text-muted-foreground">{t.settings.connect.facebookId}</span>
                                     <div className="flex items-center gap-2">
                                         <code className="bg-muted px-2 py-0.5 rounded text-xs font-mono">
                                             {account.providerAccountId}
                                         </code>
-                                        <a 
+                                        <a
                                             href={`https://facebook.com/${account.providerAccountId}`}
                                             target="_blank"
                                             rel="noopener noreferrer"
@@ -173,18 +174,18 @@ export function ConnectForm({ facebookAccount }: ConnectFormProps) {
                                         </a>
                                     </div>
                                 </div>
-                                
+
                                 <div className="flex justify-between items-center py-1.5 border-b border-dashed">
-                                    <span className="text-muted-foreground">Token Expires</span>
+                                    <span className="text-muted-foreground">{t.settings.connect.tokenExpires}</span>
                                     <span className={isTokenExpired() ? "text-red-600 font-medium" : "text-foreground"}>
                                         {formatExpiry()}
                                     </span>
                                 </div>
-                                
+
                                 <div className="flex justify-between items-center py-1.5">
-                                    <span className="text-muted-foreground">Status</span>
+                                    <span className="text-muted-foreground">{t.common.status}</span>
                                     <Badge variant={isTokenExpired() ? "destructive" : "secondary"}>
-                                        {isTokenExpired() ? "Expired" : "Active"}
+                                        {isTokenExpired() ? t.settings.connect.status.expired : t.settings.connect.status.active}
                                     </Badge>
                                 </div>
                             </div>
@@ -193,7 +194,7 @@ export function ConnectForm({ facebookAccount }: ConnectFormProps) {
                         {/* Permissions */}
                         {account.scope && (
                             <div className="rounded-xl border bg-background p-4 space-y-3">
-                                <h4 className="text-sm font-medium">Granted Permissions</h4>
+                                <h4 className="text-sm font-medium">{t.settings.connect.grantedPermissions}</h4>
                                 <div className="flex flex-wrap gap-2">
                                     {getPermissions().map((permission, index) => (
                                         <Badge key={index} variant="outline" className="text-xs">
@@ -211,10 +212,10 @@ export function ConnectForm({ facebookAccount }: ConnectFormProps) {
                                     <AlertCircle className="h-5 w-5 text-yellow-600 flex-shrink-0 mt-0.5" />
                                     <div className="space-y-1">
                                         <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                                            Token Expired
+                                            {t.settings.connect.reconnectTitle}
                                         </p>
                                         <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                                            Your Facebook access token has expired. Please disconnect and reconnect your account to continue using Facebook Ads features.
+                                            {t.settings.connect.reconnectDesc}
                                         </p>
                                     </div>
                                 </div>

@@ -7,7 +7,8 @@ import { User, Link2, Bell, Shield, Globe, Palette, Trash2, Users } from "lucide
 import { cn } from "@/lib/utils"
 import { AccountForm } from "@/components/settings/AccountForm"
 import { ConnectForm } from "@/components/settings/ConnectForm"
-import { TeamForm } from "@/components/settings/TeamForm"
+import { TeamTabs } from "@/components/settings/TeamTabs"
+import { PasswordSetupForm } from "@/components/settings/PasswordSetupForm"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Switch } from "@/components/ui/switch"
 import { Label } from "@/components/ui/label"
@@ -20,16 +21,7 @@ import { useTheme } from "@/contexts/ThemeContext"
 import { toast } from "sonner"
 import Link from "next/link"
 
-const settingsMenu = [
-    { id: "account", name: "Account", icon: User, description: "Manage your account details" },
-    { id: "connect", name: "Connections", icon: Link2, description: "Connected accounts" },
-    { id: "team", name: "Team", icon: Users, description: "Manage your team" },
-    { id: "notifications", name: "Notifications", icon: Bell, description: "Notification preferences" },
-    { id: "security", name: "Security", icon: Shield, description: "Security settings" },
-    { id: "language", name: "Language", icon: Globe, description: "Language & region" },
-    { id: "appearance", name: "Appearance", icon: Palette, description: "Theme settings" },
-    { id: "danger", name: "Delete Account", icon: Trash2, description: "Permanently delete account" },
-]
+
 
 interface UserSettings {
     language: string
@@ -62,9 +54,20 @@ export default function SettingsPage() {
     const searchParams = useSearchParams()
     const activeSection = searchParams.get("tab") || "account"
     const { data: session } = useSession()
-    const { language, setLanguage, timezone, setTimezone } = useLanguage()
+    const { language, setLanguage, timezone, setTimezone, t } = useLanguage()
     const { theme, setTheme, primaryColor, setPrimaryColor, primaryIntensity, setPrimaryIntensity, compactMode, setCompactMode, showAnimations, setShowAnimations } = useTheme()
-    
+
+    const settingsMenu = [
+        { id: "account", name: t.settings.menu.account, icon: User, description: t.settings.menu.accountDesc },
+        { id: "connect", name: t.settings.menu.connect, icon: Link2, description: t.settings.menu.connectDesc },
+        { id: "team", name: t.settings.menu.team, icon: Users, description: t.settings.menu.teamDesc },
+        { id: "notifications", name: t.settings.menu.notifications, icon: Bell, description: t.settings.menu.notificationsDesc },
+        { id: "security", name: t.settings.menu.security, icon: Shield, description: t.settings.menu.securityDesc },
+        { id: "language", name: t.settings.menu.language, icon: Globe, description: t.settings.menu.languageDesc },
+        { id: "appearance", name: t.settings.menu.appearance, icon: Palette, description: t.settings.menu.appearanceDesc },
+        { id: "danger", name: t.settings.menu.danger, icon: Trash2, description: t.settings.menu.dangerDesc },
+    ]
+
     const [settings, setSettings] = useState<UserSettings | null>(null)
     const [loading, setLoading] = useState(true)
     const [saving, setSaving] = useState(false)
@@ -95,7 +98,7 @@ export default function SettingsPage() {
                 setLoading(false)
             }
         }
-        
+
         const loadFacebookAccount = async () => {
             try {
                 const res = await fetch("/api/settings/facebook-account")
@@ -107,7 +110,7 @@ export default function SettingsPage() {
                 console.error("Failed to load Facebook account:", error)
             }
         }
-        
+
         loadSettings()
         loadFacebookAccount()
     }, [])
@@ -165,7 +168,7 @@ export default function SettingsPage() {
             toast.error("Please type DELETE to confirm")
             return
         }
-        
+
         setDeleting(true)
         try {
             const res = await fetch("/api/account/delete", {
@@ -208,7 +211,7 @@ export default function SettingsPage() {
                     {/* Settings Sidebar */}
                     <div className="w-64 flex-shrink-0">
                         <div className="bg-gray-50 rounded-xl p-4">
-                            <h2 className="text-lg font-semibold mb-4 px-2">Settings</h2>
+                            <h2 className="text-lg font-semibold mb-4 px-2">{t.common.settings}</h2>
                             <nav className="space-y-1">
                                 {settingsMenu.map((item) => (
                                     <Link
@@ -217,7 +220,7 @@ export default function SettingsPage() {
                                         className={cn(
                                             "w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-all",
                                             activeSection === item.id
-                                                ? item.id === "danger" 
+                                                ? item.id === "danger"
                                                     ? "bg-red-50 text-red-600"
                                                     : "bg-primary/10 text-primary"
                                                 : item.id === "danger"
@@ -243,480 +246,483 @@ export default function SettingsPage() {
                     <div className="flex-1 max-w-3xl">
                         <div className="bg-gray-50 rounded-xl p-6">
                             {activeSection === "account" && (
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-xl font-semibold">Account Settings</h3>
-                                <p className="text-muted-foreground text-sm mt-1">
-                                    Manage your account information and preferences
-                                </p>
-                            </div>
-                            <div className="border-t pt-6">
-                                <AccountForm />
-                            </div>
-                        </div>
-                    )}
-
-                    {activeSection === "connect" && (
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-xl font-semibold">Connected Accounts</h3>
-                                <p className="text-muted-foreground text-sm mt-1">
-                                    Connect your social media and advertising accounts
-                                </p>
-                            </div>
-                            <div className="border-t pt-6">
-                                <ConnectForm facebookAccount={facebookAccount} />
-                            </div>
-                        </div>
-                    )}
-
-                    {activeSection === "team" && (
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-xl font-semibold">จัดการทีม</h3>
-                                <p className="text-muted-foreground text-sm mt-1">
-                                    เพิ่มพนักงานและแบ่งแชทลูกค้าให้แต่ละคนดูแล
-                                </p>
-                            </div>
-                            <div className="border-t pt-6">
-                                <TeamForm />
-                            </div>
-                        </div>
-                    )}
-
-                    {activeSection === "notifications" && (
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-xl font-semibold">Notification Preferences</h3>
-                                <p className="text-muted-foreground text-sm mt-1">
-                                    Choose what notifications you want to receive
-                                </p>
-                            </div>
-                            <div className="border-t pt-6 space-y-4">
-                                <div className="flex items-center justify-between">
+                                <div className="space-y-6">
                                     <div>
-                                        <Label className="font-medium">Email Notifications</Label>
-                                        <p className="text-sm text-muted-foreground">Receive email updates about your ads</p>
+                                        <h3 className="text-xl font-semibold">{t.settings.account.title}</h3>
+                                        <p className="text-muted-foreground text-sm mt-1">
+                                            {t.settings.account.description}
+                                        </p>
                                     </div>
-                                    <Switch 
-                                        checked={settings?.emailNotifications ?? true}
-                                        onCheckedChange={(v) => handleSettingChange('emailNotifications', v)}
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label className="font-medium">Campaign Alerts</Label>
-                                        <p className="text-sm text-muted-foreground">Get notified when campaigns need attention</p>
+                                    <div className="border-t pt-6">
+                                        <AccountForm />
                                     </div>
-                                    <Switch 
-                                        checked={settings?.campaignAlerts ?? true}
-                                        onCheckedChange={(v) => handleSettingChange('campaignAlerts', v)}
-                                    />
                                 </div>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label className="font-medium">Weekly Reports</Label>
-                                        <p className="text-sm text-muted-foreground">Receive weekly performance reports</p>
-                                    </div>
-                                    <Switch 
-                                        checked={settings?.weeklyReports ?? false}
-                                        onCheckedChange={(v) => handleSettingChange('weeklyReports', v)}
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <Label className="font-medium">Budget Alerts</Label>
-                                        <p className="text-sm text-muted-foreground">Alert when budget is running low</p>
-                                    </div>
-                                    <Switch 
-                                        checked={settings?.budgetAlerts ?? true}
-                                        onCheckedChange={(v) => handleSettingChange('budgetAlerts', v)}
-                                    />
-                                </div>
-                            </div>
+                            )}
 
-                            {/* AdBox Notifications */}
-                            <div className="border-t pt-6 mt-6">
-                                <h4 className="font-semibold mb-4">AdBox Chat Notifications</h4>
-                                <div className="space-y-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <Label className="font-medium">Browser Notifications</Label>
-                                            <p className="text-sm text-muted-foreground">Show Windows/Browser notification popup when new message arrives</p>
-                                        </div>
-                                        <Switch 
-                                            checked={settings?.adboxBrowserNotification ?? true}
-                                            onCheckedChange={(v) => {
-                                                if (v && typeof window !== 'undefined' && 'Notification' in window) {
-                                                    Notification.requestPermission().then(permission => {
-                                                        if (permission === 'granted') {
-                                                            handleSettingChange('adboxBrowserNotification', true)
-                                                            toast.success('Browser notifications enabled!')
-                                                        } else {
-                                                            toast.error('Please allow notifications in your browser settings')
-                                                        }
-                                                    })
-                                                } else {
-                                                    handleSettingChange('adboxBrowserNotification', v)
-                                                }
-                                            }}
-                                        />
+                            {activeSection === "connect" && (
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-xl font-semibold">{t.settings.connect.title}</h3>
+                                        <p className="text-muted-foreground text-sm mt-1">
+                                            {t.settings.connect.description}
+                                        </p>
                                     </div>
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <Label className="font-medium">Sound Notifications</Label>
-                                            <p className="text-sm text-muted-foreground">Play sound when new message arrives</p>
-                                        </div>
-                                        <Switch 
-                                            checked={settings?.adboxSoundEnabled ?? true}
-                                            onCheckedChange={(v) => handleSettingChange('adboxSoundEnabled', v)}
-                                        />
-                                    </div>
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <Label className="font-medium">In-App Toast Notifications</Label>
-                                            <p className="text-sm text-muted-foreground">Show toast popup in the app (top-right corner)</p>
-                                        </div>
-                                        <Switch 
-                                            checked={settings?.adboxInAppNotification ?? true}
-                                            onCheckedChange={(v) => handleSettingChange('adboxInAppNotification', v)}
-                                        />
-                                    </div>
-                                    <div className="pt-2">
-                                        <Button
-                                            variant="outline"
-                                            size="sm"
-                                            onClick={() => {
-                                                // Test sound
-                                                try {
-                                                    const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
-                                                    const osc1 = ctx.createOscillator()
-                                                    const gain1 = ctx.createGain()
-                                                    osc1.connect(gain1)
-                                                    gain1.connect(ctx.destination)
-                                                    osc1.frequency.value = 830
-                                                    osc1.type = 'sine'
-                                                    gain1.gain.setValueAtTime(0.3, ctx.currentTime)
-                                                    gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3)
-                                                    osc1.start(ctx.currentTime)
-                                                    osc1.stop(ctx.currentTime + 0.3)
-                                                    
-                                                    const osc2 = ctx.createOscillator()
-                                                    const gain2 = ctx.createGain()
-                                                    osc2.connect(gain2)
-                                                    gain2.connect(ctx.destination)
-                                                    osc2.frequency.value = 622
-                                                    osc2.type = 'sine'
-                                                    gain2.gain.setValueAtTime(0, ctx.currentTime)
-                                                    gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.15)
-                                                    gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
-                                                    osc2.start(ctx.currentTime + 0.15)
-                                                    osc2.stop(ctx.currentTime + 0.5)
-                                                    
-                                                    toast.success('🔔 Test notification!', {
-                                                        description: 'This is how notifications will appear',
-                                                        position: 'top-right'
-                                                    })
-                                                } catch (e) {
-                                                    toast.error('Audio not available')
-                                                }
-                                            }}
-                                        >
-                                            🔔 Test Notification
-                                        </Button>
+                                    <div className="border-t pt-6">
+                                        <ConnectForm facebookAccount={facebookAccount} />
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    )}
+                            )}
 
-                    {activeSection === "security" && (
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-xl font-semibold">Security Settings</h3>
-                                <p className="text-muted-foreground text-sm mt-1">
-                                    Manage your account security
-                                </p>
-                            </div>
-                            <div className="border-t pt-6 space-y-4">
-                                <Card>
-                                    <CardHeader className="pb-3">
-                                        <CardTitle className="text-base">Two-Factor Authentication</CardTitle>
-                                        <CardDescription>Add an extra layer of security to your account</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
+                            {activeSection === "team" && (
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-xl font-semibold">{t.settings.team.title}</h3>
+                                        <p className="text-muted-foreground text-sm mt-1">
+                                            {t.settings.team.description}
+                                        </p>
+                                    </div>
+                                    <div className="border-t pt-6">
+                                        <TeamTabs />
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeSection === "notifications" && (
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-xl font-semibold">{t.settings.notifications.title}</h3>
+                                        <p className="text-muted-foreground text-sm mt-1">
+                                            {t.settings.notifications.description}
+                                        </p>
+                                    </div>
+                                    <div className="border-t pt-6 space-y-4">
                                         <div className="flex items-center justify-between">
-                                            <span className="text-sm text-muted-foreground">
-                                                Status: {settings?.twoFactorEnabled ? "Enabled" : "Not enabled"}
-                                            </span>
-                                            <Switch 
-                                                checked={settings?.twoFactorEnabled ?? false}
-                                                onCheckedChange={(v) => handleSettingChange('twoFactorEnabled', v)}
+                                            <div>
+                                                <Label className="font-medium">{t.settings.notifications.email}</Label>
+                                                <p className="text-sm text-muted-foreground">{t.settings.notifications.emailDesc}</p>
+                                            </div>
+                                            <Switch
+                                                checked={settings?.emailNotifications ?? true}
+                                                onCheckedChange={(v) => handleSettingChange('emailNotifications', v)}
                                             />
                                         </div>
-                                    </CardContent>
-                                </Card>
-                                <Card>
-                                    <CardHeader className="pb-3">
-                                        <CardTitle className="text-base">Session Management</CardTitle>
-                                        <CardDescription>Manage your active sessions</CardDescription>
-                                    </CardHeader>
-                                    <CardContent>
-                                        <div className="text-sm text-muted-foreground">
-                                            Current session: {session?.user?.email || "Unknown"}
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label className="font-medium">{t.settings.notifications.campaign}</Label>
+                                                <p className="text-sm text-muted-foreground">{t.settings.notifications.campaignDesc}</p>
+                                            </div>
+                                            <Switch
+                                                checked={settings?.campaignAlerts ?? true}
+                                                onCheckedChange={(v) => handleSettingChange('campaignAlerts', v)}
+                                            />
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeSection === "language" && (
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-xl font-semibold">Language & Region</h3>
-                                <p className="text-muted-foreground text-sm mt-1">
-                                    Set your preferred language and regional settings
-                                </p>
-                            </div>
-                            <div className="border-t pt-6 space-y-4">
-                                <div className="space-y-2">
-                                    <Label className="font-medium">Display Language</Label>
-                                    <Select 
-                                        value={settings?.language || language} 
-                                        onValueChange={(value) => handleSettingChange('language', value)}
-                                    >
-                                        <SelectTrigger className="w-[200px]">
-                                            <SelectValue placeholder="Select language" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="en">English</SelectItem>
-                                            <SelectItem value="th">ไทย (Thai)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="font-medium">Timezone</Label>
-                                    <Select 
-                                        value={settings?.timezone || "auto"}
-                                        onValueChange={(value) => handleSettingChange('timezone', value)}
-                                    >
-                                        <SelectTrigger className="w-[280px]">
-                                            <SelectValue placeholder="Select timezone" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="auto">🌐 Auto (ตามเครื่อง)</SelectItem>
-                                            <SelectItem value="asia-bangkok">Asia/Bangkok (GMT+7)</SelectItem>
-                                            <SelectItem value="asia-singapore">Asia/Singapore (GMT+8)</SelectItem>
-                                            <SelectItem value="asia-tokyo">Asia/Tokyo (GMT+9)</SelectItem>
-                                            <SelectItem value="europe-london">Europe/London (GMT+0)</SelectItem>
-                                            <SelectItem value="utc">UTC (GMT+0)</SelectItem>
-                                            <SelectItem value="america-newyork">America/New York (GMT-5)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                                <div className="space-y-2">
-                                    <Label className="font-medium">Currency Display</Label>
-                                    <Select 
-                                        value={settings?.currency || "usd"}
-                                        onValueChange={(value) => handleSettingChange('currency', value)}
-                                    >
-                                        <SelectTrigger className="w-[200px]">
-                                            <SelectValue placeholder="Select currency" />
-                                        </SelectTrigger>
-                                        <SelectContent>
-                                            <SelectItem value="usd">USD ($)</SelectItem>
-                                            <SelectItem value="thb">THB (฿)</SelectItem>
-                                            <SelectItem value="eur">EUR (€)</SelectItem>
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeSection === "appearance" && (
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-xl font-semibold">Appearance</h3>
-                                <p className="text-muted-foreground text-sm mt-1">
-                                    Customize the look and feel of the application
-                                </p>
-                            </div>
-                            <div className="border-t pt-6 space-y-6">
-                                <div className="space-y-3">
-                                    <Label className="font-medium">Theme</Label>
-                                    <div className="flex gap-3">
-                                        <button 
-                                            onClick={() => handleSettingChange('theme', 'light')}
-                                            className={cn(
-                                                "flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition-all",
-                                                (settings?.theme || theme) === "light" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
-                                            )}
-                                        >
-                                            <div className="w-16 h-10 bg-white border rounded shadow-sm"></div>
-                                            <span className={cn("text-sm", (settings?.theme || theme) === "light" ? "font-medium text-primary" : "")}>Light</span>
-                                        </button>
-                                        <button 
-                                            onClick={() => handleSettingChange('theme', 'dark')}
-                                            className={cn(
-                                                "flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition-all",
-                                                (settings?.theme || theme) === "dark" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
-                                            )}
-                                        >
-                                            <div className="w-16 h-10 bg-gray-900 rounded shadow-sm"></div>
-                                            <span className={cn("text-sm", (settings?.theme || theme) === "dark" ? "font-medium text-primary" : "")}>Dark</span>
-                                        </button>
-                                        <button 
-                                            onClick={() => handleSettingChange('theme', 'system')}
-                                            className={cn(
-                                                "flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition-all",
-                                                (settings?.theme || theme) === "system" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
-                                            )}
-                                        >
-                                            <div className="w-16 h-10 bg-gradient-to-b from-white to-gray-900 rounded shadow-sm"></div>
-                                            <span className={cn("text-sm", (settings?.theme || theme) === "system" ? "font-medium text-primary" : "")}>System</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <div className="space-y-3">
-                                    <Label className="font-medium">Primary Color</Label>
-                                    <div className="flex flex-wrap gap-3">
-                                        {primaryColors.map((color) => (
-                                            <button
-                                                key={color.id}
-                                                onClick={() => handleSettingChange('primaryColor', color.id)}
-                                                className={cn(
-                                                    "flex flex-col items-center gap-2 p-3 border-2 rounded-lg transition-all min-w-[80px]",
-                                                    (settings?.primaryColor || primaryColor) === color.id ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
-                                                )}
-                                            >
-                                                <div className={cn("w-8 h-8 rounded-full shadow-sm", color.color)}></div>
-                                                <span className={cn("text-xs", (settings?.primaryColor || primaryColor) === color.id ? "font-medium text-primary" : "")}>{color.name}</span>
-                                            </button>
-                                        ))}
-                                    </div>
-                                    <div className="pt-4 space-y-2">
-                                        <div className="flex items-center justify-between text-sm text-muted-foreground">
-                                            <span>Color intensity</span>
-                                            <span className="font-medium text-foreground">{primaryIntensity}%</span>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label className="font-medium">{t.settings.notifications.weekly}</Label>
+                                                <p className="text-sm text-muted-foreground">{t.settings.notifications.weeklyDesc}</p>
+                                            </div>
+                                            <Switch
+                                                checked={settings?.weeklyReports ?? false}
+                                                onCheckedChange={(v) => handleSettingChange('weeklyReports', v)}
+                                            />
                                         </div>
-                                        <input
-                                            type="range"
-                                            min={60}
-                                            max={140}
-                                            step={1}
-                                            value={primaryIntensity}
-                                            onChange={(e) => setPrimaryIntensity(Number(e.target.value))}
-                                            className="w-full"
-                                            style={{ accentColor: "var(--primary)" }}
-                                        />
-                                        <p className="text-xs text-muted-foreground">ปรับความเข้มของสีหลัก (บันทึกไว้ในเบราว์เซอร์ของคุณ)</p>
-                                    </div>
-                                </div>
-
-                                <div className="flex items-center justify-between py-2">
-                                    <div>
-                                        <Label className="font-medium">Compact Mode</Label>
-                                        <p className="text-sm text-muted-foreground">Use smaller spacing and fonts</p>
-                                    </div>
-                                    <Switch 
-                                        checked={settings?.compactMode ?? compactMode} 
-                                        onCheckedChange={(v) => handleSettingChange('compactMode', v)} 
-                                    />
-                                </div>
-                                <div className="flex items-center justify-between py-2">
-                                    <div>
-                                        <Label className="font-medium">Show Animations</Label>
-                                        <p className="text-sm text-muted-foreground">Enable UI animations</p>
-                                    </div>
-                                    <Switch 
-                                        checked={settings?.showAnimations ?? showAnimations} 
-                                        onCheckedChange={(v) => handleSettingChange('showAnimations', v)} 
-                                    />
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    {activeSection === "danger" && (
-                        <div className="space-y-6">
-                            <div>
-                                <h3 className="text-xl font-semibold text-red-600">Delete Account</h3>
-                                <p className="text-muted-foreground text-sm mt-1">
-                                    Permanently delete your account and all associated data
-                                </p>
-                            </div>
-                            <div className="border-t pt-6">
-                                <Card className="border-red-200 bg-red-50">
-                                    <CardHeader>
-                                        <CardTitle className="text-red-600 flex items-center gap-2">
-                                            <Trash2 className="w-5 h-5" />
-                                            Danger Zone
-                                        </CardTitle>
-                                        <CardDescription className="text-red-500">
-                                            This action cannot be undone. This will permanently delete your account and remove all your data from our servers.
-                                        </CardDescription>
-                                    </CardHeader>
-                                    <CardContent className="space-y-4">
-                                        <div className="text-sm text-gray-700">
-                                            <p className="font-medium mb-2">Deleting your account will:</p>
-                                            <ul className="list-disc list-inside space-y-1 text-gray-600">
-                                                <li>Remove all your personal information</li>
-                                                <li>Disconnect all linked accounts (Facebook, Google)</li>
-                                                <li>Delete all your ad accounts and data</li>
-                                                <li>Remove all settings and preferences</li>
-                                            </ul>
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <Label className="font-medium">{t.settings.notifications.budget}</Label>
+                                                <p className="text-sm text-muted-foreground">{t.settings.notifications.budgetDesc}</p>
+                                            </div>
+                                            <Switch
+                                                checked={settings?.budgetAlerts ?? true}
+                                                onCheckedChange={(v) => handleSettingChange('budgetAlerts', v)}
+                                            />
                                         </div>
-                                        
-                                        <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-                                            <DialogTrigger asChild>
-                                                <Button variant="destructive" className="w-full">
-                                                    <Trash2 className="w-4 h-4 mr-2" />
-                                                    Delete My Account
+                                    </div>
+
+                                    {/* AdBox Notifications */}
+                                    <div className="border-t pt-6 mt-6">
+                                        <h4 className="font-semibold mb-4">{t.settings.notifications.adbox.title}</h4>
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <Label className="font-medium">{t.settings.notifications.adbox.browser}</Label>
+                                                    <p className="text-sm text-muted-foreground">{t.settings.notifications.adbox.browserDesc}</p>
+                                                </div>
+                                                <Switch
+                                                    checked={settings?.adboxBrowserNotification ?? true}
+                                                    onCheckedChange={(v) => {
+                                                        if (v && typeof window !== 'undefined' && 'Notification' in window) {
+                                                            Notification.requestPermission().then(permission => {
+                                                                if (permission === 'granted') {
+                                                                    handleSettingChange('adboxBrowserNotification', true)
+                                                                    toast.success(t.settings.notifications.adbox.browserEnabled)
+                                                                } else {
+                                                                    toast.error(t.settings.notifications.adbox.browserPermission)
+                                                                }
+                                                            })
+                                                        } else {
+                                                            handleSettingChange('adboxBrowserNotification', v)
+                                                        }
+                                                    }}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <Label className="font-medium">{t.settings.notifications.adbox.sound}</Label>
+                                                    <p className="text-sm text-muted-foreground">{t.settings.notifications.adbox.soundDesc}</p>
+                                                </div>
+                                                <Switch
+                                                    checked={settings?.adboxSoundEnabled ?? true}
+                                                    onCheckedChange={(v) => handleSettingChange('adboxSoundEnabled', v)}
+                                                />
+                                            </div>
+                                            <div className="flex items-center justify-between">
+                                                <div>
+                                                    <Label className="font-medium">{t.settings.notifications.adbox.inApp}</Label>
+                                                    <p className="text-sm text-muted-foreground">{t.settings.notifications.adbox.inAppDesc}</p>
+                                                </div>
+                                                <Switch
+                                                    checked={settings?.adboxInAppNotification ?? true}
+                                                    onCheckedChange={(v) => handleSettingChange('adboxInAppNotification', v)}
+                                                />
+                                            </div>
+                                            <div className="pt-2">
+                                                <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                        // Test sound
+                                                        try {
+                                                            const ctx = new (window.AudioContext || (window as any).webkitAudioContext)()
+                                                            const osc1 = ctx.createOscillator()
+                                                            const gain1 = ctx.createGain()
+                                                            osc1.connect(gain1)
+                                                            gain1.connect(ctx.destination)
+                                                            osc1.frequency.value = 830
+                                                            osc1.type = 'sine'
+                                                            gain1.gain.setValueAtTime(0.3, ctx.currentTime)
+                                                            gain1.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3)
+                                                            osc1.start(ctx.currentTime)
+                                                            osc1.stop(ctx.currentTime + 0.3)
+
+                                                            const osc2 = ctx.createOscillator()
+                                                            const gain2 = ctx.createGain()
+                                                            osc2.connect(gain2)
+                                                            gain2.connect(ctx.destination)
+                                                            osc2.frequency.value = 622
+                                                            osc2.type = 'sine'
+                                                            gain2.gain.setValueAtTime(0, ctx.currentTime)
+                                                            gain2.gain.setValueAtTime(0.3, ctx.currentTime + 0.15)
+                                                            gain2.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.5)
+                                                            osc2.start(ctx.currentTime + 0.15)
+                                                            osc2.stop(ctx.currentTime + 0.5)
+
+                                                            toast.success(`🔔 ${t.settings.notifications.adbox.testPayload}`, {
+                                                                description: t.settings.notifications.adbox.testDesc,
+                                                                position: 'top-right'
+                                                            })
+                                                        } catch (e) {
+                                                            toast.error(t.settings.notifications.adbox.audioError)
+                                                        }
+                                                    }}
+                                                >
+                                                    🔔 {t.settings.notifications.adbox.test}
                                                 </Button>
-                                            </DialogTrigger>
-                                            <DialogContent>
-                                                <DialogHeader>
-                                                    <DialogTitle className="text-red-600">Are you absolutely sure?</DialogTitle>
-                                                    <DialogDescription>
-                                                        This action cannot be undone. Please type <strong>DELETE</strong> to confirm.
-                                                    </DialogDescription>
-                                                </DialogHeader>
-                                                <div className="py-4">
-                                                    <Input
-                                                        placeholder="Type DELETE to confirm"
-                                                        value={deleteConfirm}
-                                                        onChange={(e) => setDeleteConfirm(e.target.value)}
-                                                        className="border-red-200 focus:border-red-500"
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeSection === "security" && (
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-xl font-semibold">{t.settings.security.title}</h3>
+                                        <p className="text-muted-foreground text-sm mt-1">
+                                            {t.settings.security.description}
+                                        </p>
+                                    </div>
+                                    <div className="border-t pt-6 space-y-4">
+                                        <Card>
+                                            <CardHeader className="pb-3">
+                                                <CardTitle className="text-base">{t.settings.security.mfa}</CardTitle>
+                                                <CardDescription>{t.settings.security.mfaDesc}</CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm text-muted-foreground">
+                                                        {t.settings.security.status}: {settings?.twoFactorEnabled ? t.settings.security.enabled : t.settings.security.disabled}
+                                                    </span>
+                                                    <Switch
+                                                        checked={settings?.twoFactorEnabled ?? false}
+                                                        onCheckedChange={(v) => handleSettingChange('twoFactorEnabled', v)}
                                                     />
                                                 </div>
-                                                <DialogFooter>
-                                                    <Button 
-                                                        variant="outline" 
-                                                        onClick={() => {
-                                                            setDeleteDialogOpen(false)
-                                                            setDeleteConfirm("")
-                                                        }}
+                                            </CardContent>
+                                        </Card>
+
+                                        <PasswordSetupForm />
+
+                                        <Card>
+                                            <CardHeader className="pb-3">
+                                                <CardTitle className="text-base">{t.settings.security.session}</CardTitle>
+                                                <CardDescription>{t.settings.security.sessionDesc}</CardDescription>
+                                            </CardHeader>
+                                            <CardContent>
+                                                <div className="text-sm text-muted-foreground">
+                                                    {t.settings.security.currentSession}: {session?.user?.email || t.settings.security.unknown}
+                                                </div>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeSection === "language" && (
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-xl font-semibold">{t.settings.language.title}</h3>
+                                        <p className="text-muted-foreground text-sm mt-1">
+                                            {t.settings.language.description}
+                                        </p>
+                                    </div>
+                                    <div className="border-t pt-6 space-y-4">
+                                        <div className="space-y-2">
+                                            <Label className="font-medium">{t.settings.language.display}</Label>
+                                            <Select
+                                                value={settings?.language || language}
+                                                onValueChange={(value) => handleSettingChange('language', value)}
+                                            >
+                                                <SelectTrigger className="w-[200px]">
+                                                    <SelectValue placeholder={t.settings.language.selectLang} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="en">English</SelectItem>
+                                                    <SelectItem value="th">ไทย (Thai)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="font-medium">{t.settings.language.timezone}</Label>
+                                            <Select
+                                                value={settings?.timezone || "auto"}
+                                                onValueChange={(value) => handleSettingChange('timezone', value)}
+                                            >
+                                                <SelectTrigger className="w-[280px]">
+                                                    <SelectValue placeholder={t.settings.language.selectTz} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="auto">🌐 {t.settings.language.auto}</SelectItem>
+                                                    <SelectItem value="asia-bangkok">Asia/Bangkok (GMT+7)</SelectItem>
+                                                    <SelectItem value="asia-singapore">Asia/Singapore (GMT+8)</SelectItem>
+                                                    <SelectItem value="asia-tokyo">Asia/Tokyo (GMT+9)</SelectItem>
+                                                    <SelectItem value="europe-london">Europe/London (GMT+0)</SelectItem>
+                                                    <SelectItem value="utc">UTC (GMT+0)</SelectItem>
+                                                    <SelectItem value="america-newyork">America/New York (GMT-5)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <Label className="font-medium">{t.settings.language.currency}</Label>
+                                            <Select
+                                                value={settings?.currency || "usd"}
+                                                onValueChange={(value) => handleSettingChange('currency', value)}
+                                            >
+                                                <SelectTrigger className="w-[200px]">
+                                                    <SelectValue placeholder={t.settings.language.selectCurr} />
+                                                </SelectTrigger>
+                                                <SelectContent>
+                                                    <SelectItem value="usd">USD ($)</SelectItem>
+                                                    <SelectItem value="thb">THB (฿)</SelectItem>
+                                                    <SelectItem value="eur">EUR (€)</SelectItem>
+                                                </SelectContent>
+                                            </Select>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeSection === "appearance" && (
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-xl font-semibold">{t.settings.appearance.title}</h3>
+                                        <p className="text-muted-foreground text-sm mt-1">
+                                            {t.settings.appearance.description}
+                                        </p>
+                                    </div>
+                                    <div className="border-t pt-6 space-y-6">
+                                        <div className="space-y-3">
+                                            <Label className="font-medium">{t.settings.appearance.theme}</Label>
+                                            <div className="flex gap-3">
+                                                <button
+                                                    onClick={() => handleSettingChange('theme', 'light')}
+                                                    className={cn(
+                                                        "flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition-all",
+                                                        (settings?.theme || theme) === "light" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                                                    )}
+                                                >
+                                                    <div className="w-16 h-10 bg-white border rounded shadow-sm"></div>
+                                                    <span className={cn("text-sm", (settings?.theme || theme) === "light" ? "font-medium text-primary" : "")}>{t.settings.appearance.light}</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSettingChange('theme', 'dark')}
+                                                    className={cn(
+                                                        "flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition-all",
+                                                        (settings?.theme || theme) === "dark" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                                                    )}
+                                                >
+                                                    <div className="w-16 h-10 bg-gray-900 rounded shadow-sm"></div>
+                                                    <span className={cn("text-sm", (settings?.theme || theme) === "dark" ? "font-medium text-primary" : "")}>{t.settings.appearance.dark}</span>
+                                                </button>
+                                                <button
+                                                    onClick={() => handleSettingChange('theme', 'system')}
+                                                    className={cn(
+                                                        "flex flex-col items-center gap-2 p-4 border-2 rounded-lg transition-all",
+                                                        (settings?.theme || theme) === "system" ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                                                    )}
+                                                >
+                                                    <div className="w-16 h-10 bg-gradient-to-b from-white to-gray-900 rounded shadow-sm"></div>
+                                                    <span className={cn("text-sm", (settings?.theme || theme) === "system" ? "font-medium text-primary" : "")}>{t.settings.appearance.system}</span>
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-3">
+                                            <Label className="font-medium">{t.settings.appearance.primaryColor}</Label>
+                                            <div className="flex flex-wrap gap-3">
+                                                {primaryColors.map((color) => (
+                                                    <button
+                                                        key={color.id}
+                                                        onClick={() => handleSettingChange('primaryColor', color.id)}
+                                                        className={cn(
+                                                            "flex flex-col items-center gap-2 p-3 border-2 rounded-lg transition-all min-w-[80px]",
+                                                            (settings?.primaryColor || primaryColor) === color.id ? "border-primary bg-primary/5" : "border-gray-200 hover:border-gray-300"
+                                                        )}
                                                     >
-                                                        Cancel
-                                                    </Button>
-                                                    <Button 
-                                                        variant="destructive" 
-                                                        onClick={handleDeleteAccount}
-                                                        disabled={deleteConfirm !== "DELETE" || deleting}
-                                                    >
-                                                        {deleting ? "Deleting..." : "Delete Account"}
-                                                    </Button>
-                                                </DialogFooter>
-                                            </DialogContent>
-                                        </Dialog>
-                                    </CardContent>
-                                </Card>
-                            </div>
-                        </div>
-                    )}
+                                                        <div className={cn("w-8 h-8 rounded-full shadow-sm", color.color)}></div>
+                                                        <span className={cn("text-xs", (settings?.primaryColor || primaryColor) === color.id ? "font-medium text-primary" : "")}>{t.settings.appearance.colors[color.id as keyof typeof t.settings.appearance.colors] || color.name}</span>
+                                                    </button>
+                                                ))}
+                                            </div>
+                                            <div className="pt-4 space-y-2">
+                                                <div className="flex items-center justify-between text-sm text-muted-foreground">
+                                                    <span>{t.settings.appearance.intensity}</span>
+                                                    <span className="font-medium text-foreground">{primaryIntensity}%</span>
+                                                </div>
+                                                <input
+                                                    type="range"
+                                                    min={60}
+                                                    max={140}
+                                                    step={1}
+                                                    value={primaryIntensity}
+                                                    onChange={(e) => setPrimaryIntensity(Number(e.target.value))}
+                                                    className="w-full"
+                                                    style={{ accentColor: "var(--primary)" }}
+                                                />
+                                                <p className="text-xs text-muted-foreground">{t.settings.appearance.intensityDesc}</p>
+                                            </div>
+                                        </div>
+
+                                        <div className="flex items-center justify-between py-2">
+                                            <div>
+                                                <Label className="font-medium">{t.settings.appearance.compact}</Label>
+                                                <p className="text-sm text-muted-foreground">{t.settings.appearance.compactDesc}</p>
+                                            </div>
+                                            <Switch
+                                                checked={settings?.compactMode ?? compactMode}
+                                                onCheckedChange={(v) => handleSettingChange('compactMode', v)}
+                                            />
+                                        </div>
+                                        <div className="flex items-center justify-between py-2">
+                                            <div>
+                                                <Label className="font-medium">{t.settings.appearance.animations}</Label>
+                                                <p className="text-sm text-muted-foreground">{t.settings.appearance.animationsDesc}</p>
+                                            </div>
+                                            <Switch
+                                                checked={settings?.showAnimations ?? showAnimations}
+                                                onCheckedChange={(v) => handleSettingChange('showAnimations', v)}
+                                            />
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {activeSection === "danger" && (
+                                <div className="space-y-6">
+                                    <div>
+                                        <h3 className="text-xl font-semibold text-red-600">{t.settings.danger.title}</h3>
+                                        <p className="text-muted-foreground text-sm mt-1">
+                                            {t.settings.danger.description}
+                                        </p>
+                                    </div>
+                                    <div className="border-t pt-6">
+                                        <Card className="border-red-200 bg-red-50">
+                                            <CardHeader>
+                                                <CardTitle className="text-red-600 flex items-center gap-2">
+                                                    <Trash2 className="w-5 h-5" />
+                                                    {t.settings.danger.zone}
+                                                </CardTitle>
+                                                <CardDescription className="text-red-500">
+                                                    {t.settings.danger.warning}
+                                                </CardDescription>
+                                            </CardHeader>
+                                            <CardContent className="space-y-4">
+                                                <div className="text-sm text-gray-700">
+                                                    <p className="font-medium mb-2">{t.settings.danger.impact}</p>
+                                                    <ul className="list-disc list-inside space-y-1 text-gray-600">
+                                                        <li>{t.settings.danger.impact1}</li>
+                                                        <li>{t.settings.danger.impact2}</li>
+                                                        <li>{t.settings.danger.impact3}</li>
+                                                        <li>{t.settings.danger.impact4}</li>
+                                                    </ul>
+                                                </div>
+
+                                                <Dialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+                                                    <DialogTrigger asChild>
+                                                        <Button variant="destructive" className="w-full">
+                                                            <Trash2 className="w-4 h-4 mr-2" />
+                                                            {t.settings.danger.button}
+                                                        </Button>
+                                                    </DialogTrigger>
+                                                    <DialogContent>
+                                                        <DialogHeader>
+                                                            <DialogTitle className="text-red-600">{t.settings.danger.confirmTitle}</DialogTitle>
+                                                            <DialogDescription>
+                                                                {t.settings.danger.confirmDesc} <strong>{t.settings.danger.confirmKeyword}</strong> {t.settings.danger.confirmSuffix}
+                                                            </DialogDescription>
+                                                        </DialogHeader>
+                                                        <div className="py-4">
+                                                            <Input
+                                                                placeholder={`${t.settings.danger.confirmDesc} ${t.settings.danger.confirmKeyword}`}
+                                                                value={deleteConfirm}
+                                                                onChange={(e) => setDeleteConfirm(e.target.value)}
+                                                                className="border-red-200 focus:border-red-500"
+                                                            />
+                                                        </div>
+                                                        <DialogFooter>
+                                                            <Button
+                                                                variant="outline"
+                                                                onClick={() => {
+                                                                    setDeleteDialogOpen(false)
+                                                                    setDeleteConfirm("")
+                                                                }}
+                                                            >
+                                                                {t.common.cancel}
+                                                            </Button>
+                                                            <Button
+                                                                variant="destructive"
+                                                                onClick={handleDeleteAccount}
+                                                                disabled={deleteConfirm !== "DELETE" || deleting}
+                                                            >
+                                                                {deleting ? "Deleting..." : t.settings.danger.button}
+                                                            </Button>
+                                                        </DialogFooter>
+                                                    </DialogContent>
+                                                </Dialog>
+                                            </CardContent>
+                                        </Card>
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>

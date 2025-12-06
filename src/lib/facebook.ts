@@ -20,17 +20,17 @@ export const getAdAccounts = async (accessToken: string) => {
         "amount_spent",
         "disable_reason",
     ], { limit: 1000 })
-    
+
     // Get active ads count for each account
     const accountsWithAdsCount = await Promise.all(
         accounts.map(async (account: any) => {
             try {
                 const offset = account.timezone_offset_hours_utc || 0
                 const formattedOffset = offset >= 0 ? `+${offset}` : `${offset}`
-                
+
                 // Calculate delivery status for accounts first
                 let deliveryStatus = account.account_status === 1 ? "ACTIVE" : "INACTIVE"
-                
+
                 // Check disable reasons - this should be checked first
                 if (account.disable_reason && account.disable_reason !== 0) {
                     deliveryStatus = "DISABLED"
@@ -47,13 +47,13 @@ export const getAdAccounts = async (accessToken: string) => {
                         deliveryStatus = "SPEND_LIMIT_REACHED"
                     }
                 }
-                
+
                 // Only count active ads if account is active
                 let activeAdsCount = 0
                 if (account.account_status === 1 && deliveryStatus !== "DISABLED") {
                     try {
                         const adAccount = new AdAccount(`act_${account.account_id}`)
-                        const ads = await adAccount.getAds(["id", "effective_status"], { 
+                        const ads = await adAccount.getAds(["id", "effective_status"], {
                             limit: 1000,
                             filtering: [{ field: 'effective_status', operator: 'IN', value: ['ACTIVE'] }]
                         })
@@ -62,7 +62,7 @@ export const getAdAccounts = async (accessToken: string) => {
                         console.error(`Error fetching ads for account ${account.account_id}:`, error)
                     }
                 }
-                
+
                 return {
                     id: account.account_id,
                     name: account.name,
@@ -95,7 +95,7 @@ export const getAdAccounts = async (accessToken: string) => {
             }
         })
     )
-    
+
     return accountsWithAdsCount
 }
 
@@ -118,11 +118,11 @@ export const getCampaigns = async (accessToken: string, accountId: string) => {
 export const getCampaignsWithDeliveryStatus = async (accessToken: string, accountId: string) => {
     initFacebookSdk(accessToken)
     const account = new AdAccount(accountId)
-    
+
     // First check if account is disabled
     const accountInfo = await account.read(['account_status', 'disable_reason'])
     const isAccountDisabled = accountInfo.account_status !== 1 || (accountInfo.disable_reason && accountInfo.disable_reason !== 0)
-    
+
     // Get campaigns, adsets, and ads in parallel
     const [campaigns, adsets, ads] = await Promise.all([
         account.getCampaigns(["id", "name", "status", "objective", "daily_budget", "lifetime_budget", "effective_status"], { limit: 1000 }),
@@ -163,7 +163,7 @@ export const getCampaignsWithDeliveryStatus = async (accessToken: string, accoun
                 lifetimeBudget: campaign.lifetime_budget,
             }
         }
-        
+
         const campaignAdSets = adsetsByCampaignId.get(campaign.id) || []
         const campaignAds: any[] = []
         campaignAdSets.forEach((adset: any) => {
@@ -173,7 +173,7 @@ export const getCampaignsWithDeliveryStatus = async (accessToken: string, accoun
 
         // Calculate delivery status based on ads
         let deliveryStatus = campaign.effective_status
-        
+
         if (campaign.status === 'PAUSED') {
             deliveryStatus = 'CAMPAIGN_OFF'
         } else if (campaignAdSets.length === 0) {
@@ -185,7 +185,7 @@ export const getCampaignsWithDeliveryStatus = async (accessToken: string, accoun
             const activeAds = campaignAds.filter((a: any) => a.effective_status === 'ACTIVE')
             const pausedAds = campaignAds.filter((a: any) => a.status === 'PAUSED')
             const pausedAdSets = campaignAdSets.filter((as: any) => as.status === 'PAUSED')
-            
+
             if (activeAds.length > 0) {
                 deliveryStatus = 'ACTIVE'
             } else if (pausedAds.length === campaignAds.length && campaignAds.length > 0) {
@@ -214,11 +214,11 @@ export const getCampaignsWithDeliveryStatus = async (accessToken: string, accoun
 export const getAdSetsWithDeliveryStatus = async (accessToken: string, accountId: string, campaignIds?: string[]) => {
     initFacebookSdk(accessToken)
     const account = new AdAccount(accountId)
-    
+
     // First check if account is disabled
     const accountInfo = await account.read(['account_status', 'disable_reason'])
     const isAccountDisabled = accountInfo.account_status !== 1 || (accountInfo.disable_reason && accountInfo.disable_reason !== 0)
-    
+
     const adsetParams: any = { limit: 1000 }
     if (campaignIds && campaignIds.length > 0) {
         adsetParams.filtering = [{
@@ -264,12 +264,12 @@ export const getAdSetsWithDeliveryStatus = async (accessToken: string, accountId
                 lifetimeBudget: adset.lifetime_budget,
             }
         }
-        
+
         const adsetAds = adsByAdSetId.get(adset.id) || []
 
         // Calculate delivery status based on ads
         let deliveryStatus = adset.effective_status
-        
+
         if (adset.status === 'PAUSED') {
             deliveryStatus = 'ADSET_OFF'
         } else if (adsetAds.length === 0) {
@@ -277,7 +277,7 @@ export const getAdSetsWithDeliveryStatus = async (accessToken: string, accountId
         } else {
             const activeAds = adsetAds.filter((a: any) => a.effective_status === 'ACTIVE')
             const pausedAds = adsetAds.filter((a: any) => a.status === 'PAUSED')
-            
+
             if (activeAds.length > 0) {
                 deliveryStatus = 'ACTIVE'
             } else if (pausedAds.length === adsetAds.length && adsetAds.length > 0) {
@@ -330,11 +330,11 @@ export const getAdSets = async (accessToken: string, accountId: string, campaign
 export const getAds = async (accessToken: string, accountId: string, adSetIds?: string[]) => {
     initFacebookSdk(accessToken)
     const account = new AdAccount(accountId)
-    
+
     // First check if account is disabled
     const accountInfo = await account.read(['account_status', 'disable_reason'])
     const isAccountDisabled = accountInfo.account_status !== 1 || (accountInfo.disable_reason && accountInfo.disable_reason !== 0)
-    
+
     const params: any = {
         fields: ["id", "name", "status", "adset_id"],
         limit: 1000
@@ -354,7 +354,7 @@ export const getAds = async (accessToken: string, accountId: string, adSetIds?: 
         account.getAdSets(["id", "campaign_id", "daily_budget", "lifetime_budget"], { limit: 1000 }),
         account.getCampaigns(["id", "daily_budget", "lifetime_budget", "objective"], { limit: 1000 })
     ])
-    
+
     // Create a map of campaign budgets and objectives
     const campaignBudgetMap = new Map<string, { dailyBudget?: string, lifetimeBudget?: string, objective?: string }>()
     campaigns.forEach((campaign: any) => {
@@ -364,7 +364,7 @@ export const getAds = async (accessToken: string, accountId: string, adSetIds?: 
             objective: campaign.objective
         })
     })
-    
+
     // Create a map of adset budgets (with campaign fallback info)
     const adsetBudgetMap = new Map<string, { dailyBudget?: string, lifetimeBudget?: string, campaignId?: string }>()
     adsets.forEach((adset: any) => {
@@ -374,17 +374,17 @@ export const getAds = async (accessToken: string, accountId: string, adSetIds?: 
             campaignId: adset.campaign_id
         })
     })
-    
+
     // Collect unique page IDs to fetch page info
     const pageIds = new Set<string>()
     ads.forEach((ad: any) => {
         // SDK returns data in _data property or direct access
         const adData = ad._data || ad
         const creative = adData.creative
-        
+
         const pageId = creative?.actor_id || creative?.object_story_spec?.page_id
         if (pageId) pageIds.add(String(pageId))
-        
+
         // Also try to get page ID from effective_object_story_id (format: pageId_postId)
         if (creative?.effective_object_story_id) {
             const parts = creative.effective_object_story_id.split('_')
@@ -393,12 +393,12 @@ export const getAds = async (accessToken: string, accountId: string, adSetIds?: 
             }
         }
     })
-    
+
     // Fetch page info for each page ID individually
     const pageInfoMap = new Map<string, { name: string, username?: string }>()
     if (pageIds.size > 0) {
         const pageIdsArray = Array.from(pageIds)
-        
+
         // Fetch all pages in parallel
         const pagePromises = pageIdsArray.map(async (pageId) => {
             try {
@@ -407,12 +407,12 @@ export const getAds = async (accessToken: string, accountId: string, adSetIds?: 
                 )
                 const data = await response.json()
                 console.log(`Page ${pageId} response:`, JSON.stringify(data))
-                
+
                 if (data && !data.error) {
-                    return { 
-                        id: pageId, 
-                        name: data.name, 
-                        username: data.username 
+                    return {
+                        id: pageId,
+                        name: data.name,
+                        username: data.username
                     }
                 }
             } catch (error) {
@@ -420,7 +420,7 @@ export const getAds = async (accessToken: string, accountId: string, adSetIds?: 
             }
             return null
         })
-        
+
         const results = await Promise.all(pagePromises)
         results.forEach((result) => {
             if (result) {
@@ -434,7 +434,7 @@ export const getAds = async (accessToken: string, accountId: string, adSetIds?: 
     console.log("========== PAGE INFO MAP ==========")
     console.log(JSON.stringify(Array.from(pageInfoMap.entries()), null, 2))
     console.log("====================================")
-    
+
     return ads.map((ad: any) => {
         let imageUrl = ad.creative?.thumbnail_url || ad.creative?.image_url
 
@@ -455,7 +455,7 @@ export const getAds = async (accessToken: string, accountId: string, adSetIds?: 
         let lifetimeBudget = adsetInfo?.lifetimeBudget
         let budgetSource: 'adset' | 'campaign' | null = null
         let objective: string | null = null
-        
+
         // Check if AdSet has its own budget
         if (dailyBudget || lifetimeBudget) {
             budgetSource = 'adset'
@@ -494,26 +494,85 @@ export const getAds = async (accessToken: string, accountId: string, adSetIds?: 
     })
 }
 
-export const getInsights = async (accessToken: string, objectId: string, objectType: 'account' | 'campaign' | 'adset' | 'ad') => {
+export const getInsights = async (
+    accessToken: string,
+    accountId: string,
+    level: 'campaign' | 'adset' | 'ad',
+    dateRange?: { from: string, to: string }
+) => {
     initFacebookSdk(accessToken)
-    let object: any
+    const account = new AdAccount(accountId)
+    try {
+        const fields = [
+            'spend', 'impressions', 'clicks', 'cpc', 'ctr', 'reach', 'frequency', 'actions',
+            'video_avg_time_watched_actions',
+            'video_play_actions',
+            'video_p25_watched_actions',
+            'video_p50_watched_actions',
+            'video_p75_watched_actions',
+            'video_p95_watched_actions',
+            'video_p100_watched_actions',
+            'cost_per_action_type'
+        ]
+        if (level === 'campaign') fields.push('campaign_id')
+        if (level === 'adset') fields.push('adset_id')
+        if (level === 'ad') fields.push('ad_id')
 
-    // Note: In SDK, getInsights is usually called on the object itself
-    // For simplicity, we'll instantiate the generic object based on ID, 
-    // but strictly speaking we should use the specific class (AdAccount, Campaign, etc.)
-    // However, AdAccount(id).getInsights() works.
+        const params: any = {
+            level,
+            limit: 1000
+        }
 
-    // For this implementation, we will assume the objectId is passed and we use AdAccount just to access the API, 
-    // or we instantiate the correct class.
+        if (dateRange) {
+            params.time_range = {
+                since: dateRange.from,
+                until: dateRange.to
+            }
+        } else {
+            params.date_preset = 'maximum'
+        }
 
-    // Actually, it's better to use the specific classes if possible, or just use the AdAccount context if we are fetching for the whole account.
-    // But if we want insights for specific objects, we should call getInsights on them.
+        const insights = await account.getInsights(fields, params)
 
-    // Let's simplify: We will fetch insights for the *Account* level by default or specific IDs if needed.
-    // But the UI asks for insights for the list items.
-    // The efficient way is to fetch insights for the *Account* with 'level' parameter.
+        return insights.map((i: any) => {
+            const getActionValue = (actions: any[], type: string) => {
+                const action = actions?.find((a: any) => a.action_type === type)
+                return action ? parseFloat(action.value) : 0
+            }
 
-    return [] // Placeholder for now, will implement in the route logic for batching
+            const getCostValue = (costs: any[], type: string) => {
+                const cost = costs?.find((c: any) => c.action_type === type)
+                return cost ? parseFloat(cost.value) : 0
+            }
+
+            return {
+                id: i.campaign_id || i.adset_id || i.ad_id,
+                spend: i.spend,
+                impressions: i.impressions,
+                clicks: i.clicks,
+                cpc: i.cpc,
+                ctr: i.ctr,
+                reach: i.reach,
+                frequency: i.frequency,
+                postEngagements: getActionValue(i.actions, 'post_engagement'),
+                newMessagingContacts: getActionValue(i.actions, 'onsite_conversion.messaging_conversation_started_7d'),
+                costPerNewMessagingContact: getCostValue(i.cost_per_action_type, 'onsite_conversion.messaging_conversation_started_7d'),
+                videoAvgTimeWatched: i.video_avg_time_watched_actions?.[0]?.value,
+                videoPlays: i.video_play_actions?.[0]?.value,
+                video3SecWatched: getActionValue(i.actions, 'video_view'), // 'video_view' is often 3-second views
+                videoP25Watched: i.video_p25_watched_actions?.[0]?.value,
+                videoP50Watched: i.video_p50_watched_actions?.[0]?.value,
+                videoP75Watched: i.video_p75_watched_actions?.[0]?.value,
+                videoP95Watched: i.video_p95_watched_actions?.[0]?.value,
+                videoP100Watched: i.video_p100_watched_actions?.[0]?.value,
+                actions: i.actions,
+                costPerActionType: i.cost_per_action_type
+            }
+        })
+    } catch (error) {
+        console.error(`Error fetching insights for ${accountId} at level ${level}:`, error)
+        return []
+    }
 }
 
 // ===== Facebook Pages API Functions (for AdBox) =====
@@ -524,14 +583,14 @@ export async function getPages(accessToken: string) {
         `https://graph.facebook.com/v21.0/me/accounts?fields=id,name,access_token,category,picture&access_token=${accessToken}`
     )
     const data = await response.json()
-    
+
     console.log('[getPages] Response:', JSON.stringify(data).slice(0, 500));
-    
+
     if (data.error) {
         console.error('[getPages] Facebook error:', data.error);
         throw new Error(data.error.message)
     }
-    
+
     return data.data || []
 }
 
@@ -616,7 +675,7 @@ export async function getFreshPageAccessToken(
 
 export async function getPageConversations(userAccessToken: string, pageId: string, pageAccessToken?: string) {
     const token = pageAccessToken || userAccessToken
-    
+
     try {
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 15000)
@@ -628,12 +687,12 @@ export async function getPageConversations(userAccessToken: string, pageId: stri
         )
         clearTimeout(timeout)
         const data = await response.json()
-        
+
         if (data.error) {
             console.error(`Error fetching conversations for page ${pageId}:`, data.error)
             return []
         }
-        
+
         return data.data || []
     } catch (err) {
         if (err instanceof Error && err.name === 'AbortError') {
@@ -646,35 +705,35 @@ export async function getPageConversations(userAccessToken: string, pageId: stri
 }
 
 export async function getConversationMessages(
-    userAccessToken: string, 
-    conversationId: string, 
-    pageId: string, 
+    userAccessToken: string,
+    conversationId: string,
+    pageId: string,
     pageAccessToken?: string,
     limit: number = 100,
     after?: string
 ) {
     const token = pageAccessToken || userAccessToken
-    
+
     try {
         let url = `https://graph.facebook.com/v21.0/${conversationId}/messages?` +
             `fields=id,message,from,created_time,attachments,sticker,referral,tags,subject&` +
             `limit=${limit}&access_token=${token}`
-        
+
         if (after) {
             url += `&after=${after}`
         }
-        
+
         const controller = new AbortController()
         const timeout = setTimeout(() => controller.abort(), 15000)
         const response = await fetch(url, { signal: controller.signal })
         clearTimeout(timeout)
         const data = await response.json()
-        
+
         if (data.error) {
             console.error(`Error fetching messages for conversation ${conversationId}:`, data.error)
             return { messages: [], paging: null }
         }
-        
+
         return {
             messages: data.data || [],
             paging: data.paging || null
@@ -687,6 +746,26 @@ export async function getConversationMessages(
         }
         return { messages: [], paging: null }
     }
+}
+
+// Helper function to extract ad_id from message object
+export function extractAdIdFromMessage(msg: any): string | null {
+    if (!msg) return null;
+
+    // case 1: direct
+    if (msg.ad_id) return msg.ad_id;
+
+    // case 2: referral.ad_id
+    if (msg.referral?.ad_id) return msg.referral.ad_id;
+
+    // case 3: referral.ref
+    const ref = msg.referral?.ref;
+    if (typeof ref === "string") {
+        const match = ref.match(/ad::(\d+)/);
+        if (match) return match[1];
+    }
+
+    return null;
 }
 
 // Get conversation tags/labels - including auto-generated ad campaign tags
@@ -704,35 +783,74 @@ export async function getConversationTags(
 
         // Method 1: Try to get conversation with all available fields that might contain tags
         try {
-            const convUrl = `https://graph.facebook.com/v21.0/${conversationId}?fields=id,wallpaper,customization_info,form_data&access_token=${token}`
+            // Added custom_labels and tags to fields
+            const convUrl = `https://graph.facebook.com/v21.0/${conversationId}?fields=id,wallpaper,customization_info,form_data,custom_labels,tags&access_token=${token}`
             const convResp = await fetch(convUrl)
             const convData = await convResp.json()
             console.log(`[getConversationTags] conversation data keys:`, Object.keys(convData).filter(k => k !== 'id'))
+
+            if (convData.custom_labels && Array.isArray(convData.custom_labels)) {
+                const names = convData.custom_labels.map((l: any) => l.name);
+                console.log(`[getConversationTags] Method 1 found custom_labels:`, names);
+                allTags.push(...names);
+            }
+
+            if (convData.tags && Array.isArray(convData.tags)) {
+                const names = convData.tags.map((l: any) => l.name);
+                console.log(`[getConversationTags] Method 1 found tags:`, names);
+                allTags.push(...names);
+            }
         } catch (err) {
             console.error(`[getConversationTags] conversation fetch error:`, err instanceof Error ? err.message : 'unknown')
         }
 
+        // Method 1.5: Fetch custom_labels edge directly
+        try {
+            const labelsUrl = `https://graph.facebook.com/v21.0/${conversationId}/custom_labels?fields=id,name&access_token=${token}`
+            console.log(`[getConversationTags] Method 1.5: fetching custom_labels edge`)
+            const labelsResp = await fetch(labelsUrl)
+            const labelsData = await labelsResp.json()
+
+            if (labelsData.data && Array.isArray(labelsData.data)) {
+                const names = labelsData.data.map((l: any) => l.name)
+                console.log(`[getConversationTags] Method 1.5 found labels:`, names)
+                allTags.push(...names)
+            } else if (labelsData.error) {
+                console.log(`[getConversationTags] Method 1.5 error:`, labelsData.error)
+            }
+        } catch (err) {
+            console.error(`[getConversationTags] Method 1.5 error:`, err)
+        }
+
         // Method 2: Get page conversations with label_names field
         try {
-            const pageConvUrl = `https://graph.facebook.com/v21.0/${pageId}/conversations?fields=id,label_names,wallpaper,snippet&limit=100&access_token=${token}`
+            // Added custom_labels to fields
+            const pageConvUrl = `https://graph.facebook.com/v21.0/${pageId}/conversations?fields=id,label_names,custom_labels,wallpaper,snippet&limit=100&access_token=${token}`
             const pageConvResp = await fetch(pageConvUrl)
             const pageConvData = await pageConvResp.json()
-            
+
             if (pageConvData.data && Array.isArray(pageConvData.data)) {
                 console.log(`[getConversationTags] found ${pageConvData.data.length} conversations in page`)
-                
+
                 // Normalize ID for matching
                 const searchId = conversationId.replace(/^t_/, '')
                 const targetConv = pageConvData.data.find((c: any) => {
                     const cId = c.id.replace(/^t_/, '')
                     return c.id === conversationId || cId === searchId || c.id === `t_${searchId}`
                 })
-                
+
                 if (targetConv) {
-                    console.log(`[getConversationTags] found matching conversation:`, { id: targetConv.id, labels: targetConv.label_names, wallpaper: targetConv.wallpaper })
+                    console.log(`[getConversationTags] found matching conversation:`, { id: targetConv.id, labels: targetConv.label_names, custom_labels: targetConv.custom_labels })
+
                     if (targetConv.label_names && Array.isArray(targetConv.label_names)) {
                         console.log(`[getConversationTags] extracted label_names:`, targetConv.label_names)
                         allTags = [...allTags, ...targetConv.label_names]
+                    }
+
+                    if (targetConv.custom_labels && Array.isArray(targetConv.custom_labels)) {
+                        const names = targetConv.custom_labels.map((l: any) => l.name);
+                        console.log(`[getConversationTags] extracted custom_labels:`, names)
+                        allTags = [...allTags, ...names]
                     }
                 } else {
                     // Log first few conv IDs for debugging
@@ -744,151 +862,67 @@ export async function getConversationTags(
         }
 
         // Method 3: Check for assigned labels via API (some pages use a different endpoint)
+        // This is often redundant if Method 1.5 works, but kept as a lightweight fallback
         try {
             const labelsUrl = `https://graph.facebook.com/v21.0/${conversationId}/labels?limit=50&access_token=${token}`
             const labelsResp = await fetch(labelsUrl)
             const labelsData = await labelsResp.json()
-            
+
             if (labelsData.data && Array.isArray(labelsData.data)) {
                 console.log(`[getConversationTags] /labels endpoint returned ${labelsData.data.length} labels`)
                 const labelNames = labelsData.data.map((l: any) => l.name).filter(Boolean)
                 allTags = [...allTags, ...labelNames]
-            } else if (labelsData.error) {
-                console.log(`[getConversationTags] /labels endpoint error: ${labelsData.error.message}`)
             }
         } catch (err) {
             console.error(`[getConversationTags] labels endpoint error:`, err instanceof Error ? err.message : 'unknown')
         }
 
-        // Method 4: Get ALL messages and extract any ad/campaign info from referral or other fields
-        try {
-            // Use getAllConversationMessages for complete pagination
-            console.log(`[getConversationTags] Method 4: fetching ALL messages with pagination`)
-            
-            let allMessages: any[] = []
-            let after: string | undefined = undefined
-            let hasMore = true
-            let pageCount = 0
-            
-            while (hasMore && pageCount < 100) { // Max 100 pages to prevent infinite loops
-                pageCount++
-                
+        // Check if we found the ad_id yet. If so, we can skip the heavy message fetching.
+        const hasAdId = allTags.some(t => t.startsWith('ad_id') || t.match(/^ad_id[:.]/));
+
+        if (!hasAdId) {
+            // Method 4 (Optimized): Get ONLY the first page of messages to check for referral/ad_id
+            // We removed the full pagination loop to save API calls.
+            try {
+                console.log(`[getConversationTags] Method 4 (Optimized): fetching first page of messages`)
+
+                // Request explicit sub-fields for referral to ensure we get the data
                 let url = `https://graph.facebook.com/v21.0/${conversationId}/messages?` +
-                    `fields=id,message,from,referral,tags,created_time,subject,message_tags,type,story&` +
-                    `limit=100&access_token=${token}`
-                
-                if (after) {
-                    url += `&after=${after}`
-                }
-                
+                    `fields=id,message,from,referral{ad_id,ref,source,type},ad_id,tags,created_time,subject,message_tags,type,story&` +
+                    `limit=25&access_token=${token}` // Reduced limit to 25
+
                 const messResp = await fetch(url)
                 const messData = await messResp.json()
-                
-                // Log first message raw data for debugging
-                if (pageCount === 1 && messData.data && messData.data.length > 0) {
-                    console.log(`[getConversationTags] Raw first message:`, JSON.stringify(messData.data[0], null, 2).slice(0, 800))
-                }
-                
-                if (messData.data && Array.isArray(messData.data) && messData.data.length > 0) {
-                    allMessages = [...allMessages, ...messData.data]
-                    console.log(`[getConversationTags] fetched page ${pageCount}: ${messData.data.length} messages (total: ${allMessages.length})`)
-                    
-                    if (messData.paging?.cursors?.after) {
-                        after = messData.paging.cursors.after
-                    } else {
-                        hasMore = false
-                    }
-                } else {
-                    hasMore = false
-                }
-            }
-            
-            console.log(`[getConversationTags] finished pagination - total messages: ${allMessages.length}`)
-            
-            // Process all messages for ad_id
-            const adIds = new Set<string>()
-            const campaignTags = new Set<string>()
-            
-            // TEST MODE: Add mock ad_id for testing (remove in production)
-            const testConversationIds = ['t_25753497237570044', 't_122239334366085680']
-            if (testConversationIds.includes(conversationId)) {
-                console.log(`[getConversationTags] TEST MODE: Adding mock ad_id for testing`)
-                adIds.add(`ad_id:1202376295653380124`)
-                campaignTags.add('messenger_ads')
-            }
-            
-            allMessages.forEach((m: any, idx: number) => {
-                if (m.referral) {
-                    if (m.referral.ad_id) {
-                        console.log(`[getConversationTags] message ${idx} has ad_id:`, m.referral.ad_id)
-                        adIds.add(`ad_id:${m.referral.ad_id}`)
-                    }
-                }
-                
-                // Check for messenger_tags (nested in tags field)
-                if (m.tags && typeof m.tags === 'object') {
-                    if (m.tags.data && Array.isArray(m.tags.data)) {
-                        m.tags.data.forEach((t: any) => {
-                            if (t.name) campaignTags.add(t.name)
-                        })
-                    }
-                }
-            })
-            
-            if (adIds.size > 0) {
-                console.log(`[getConversationTags] found ${adIds.size} unique ad_ids from all messages`)
-                allTags = [...allTags, ...Array.from(adIds)]
-            }
-            if (campaignTags.size > 0) {
-                console.log(`[getConversationTags] found ${campaignTags.size} campaign tags from messages`)
-                allTags = [...allTags, ...Array.from(campaignTags)]
-            }
-        } catch (err) {
-            console.error(`[getConversationTags] messages pagination error:`, err instanceof Error ? err.message : 'unknown')
-        }
 
-        // Method 5: Fetch all labels from page and match by label assignment
-        try {
-            const labelsUrl = `https://graph.facebook.com/v21.0/${pageId}/labels?fields=id,name&limit=100&access_token=${token}`
-            console.log(`[getConversationTags] Method 5: fetching labels from ${pageId}`)
-            const labelsResp = await fetch(labelsUrl)
-            const labelsData = await labelsResp.json()
-            
-            console.log(`[getConversationTags] Method 5 response:`, labelsData.error ? `Error: ${JSON.stringify(labelsData.error)}` : `Got ${labelsData.data?.length || 0} labels`)
-            
-            if (labelsData.data && Array.isArray(labelsData.data) && labelsData.data.length > 0) {
-                console.log(`[getConversationTags] found ${labelsData.data.length} page labels:`, labelsData.data.map((l: any) => l.name))
-                
-                // Now check which labels are assigned to this conversation
-                for (const label of labelsData.data) {
-                    try {
-                        const labelConvsUrl = `https://graph.facebook.com/v21.0/${label.id}/conversations?fields=id&limit=100&access_token=${token}`
-                        const labelConvsResp = await fetch(labelConvsUrl)
-                        const labelConvsData = await labelConvsResp.json()
-                        
-                        if (labelConvsData.data && Array.isArray(labelConvsData.data)) {
-                            const searchId = conversationId.replace(/^t_/, '')
-                            const isAssigned = labelConvsData.data.some((c: any) => {
-                                const cId = c.id.replace(/^t_/, '')
-                                return c.id === conversationId || cId === searchId || c.id === `t_${searchId}`
-                            })
-                            
-                            if (isAssigned) {
-                                console.log(`[getConversationTags] conversation has label: ${label.name}`)
-                                allTags.push(label.name)
+                if (messData.data && Array.isArray(messData.data)) {
+                    console.log(`[getConversationTags] fetched ${messData.data.length} messages`)
+
+                    // Process messages for ad_id
+                    messData.data.forEach((m: any) => {
+                        const extractedId = extractAdIdFromMessage(m);
+                        if (extractedId) {
+                            console.log(`[getConversationTags] message has ad_id:`, extractedId)
+                            allTags.push(`ad_id:${extractedId}`)
+                        }
+
+                        // Also check message_tags
+                        if (m.message_tags && Array.isArray(m.message_tags)) {
+                            const adTag = m.message_tags.find((tag: any) => tag && tag.name && tag.name.includes('ad_'));
+                            if (adTag) {
+                                allTags.push(adTag.name)
                             }
                         }
-                    } catch (labelErr) {
-                        // Skip this label if error
-                        console.log(`[getConversationTags] error checking label ${label.name}`)
-                    }
+                    })
                 }
-            } else {
-                console.log(`[getConversationTags] Method 5: no labels found or error`)
+            } catch (err) {
+                console.error(`[getConversationTags] messages fetch error:`, err instanceof Error ? err.message : 'unknown')
             }
-        } catch (err) {
-            console.error(`[getConversationTags] page labels error:`, err instanceof Error ? err.message : 'unknown')
+        } else {
+            console.log(`[getConversationTags] Skipping message fetch (Method 4) because ad_id already found in labels`)
         }
+
+        // Method 5: REMOVED (Too expensive - fetches all page labels and checks assignments)
+        // This was causing exponential API calls.
 
         // Remove duplicates
         const uniqueTags = Array.from(new Set(allTags))
@@ -904,9 +938,9 @@ export async function getConversationTags(
 
 // Fetch all messages from a conversation (with pagination)
 export async function getAllConversationMessages(
-    userAccessToken: string, 
-    conversationId: string, 
-    pageId: string, 
+    userAccessToken: string,
+    conversationId: string,
+    pageId: string,
     pageAccessToken?: string,
     maxMessages: number = 500
 ) {
@@ -920,7 +954,7 @@ export async function getAllConversationMessages(
     }> = []
     let after: string | undefined = undefined
     let hasMore = true
-    
+
     while (hasMore && allMessages.length < maxMessages) {
         const result = await getConversationMessages(
             userAccessToken,
@@ -930,21 +964,21 @@ export async function getAllConversationMessages(
             100,
             after
         )
-        
+
         if (result.messages.length === 0) {
             hasMore = false
             break
         }
-        
+
         allMessages.push(...result.messages)
-        
+
         if (result.paging?.cursors?.after) {
             after = result.paging.cursors.after
         } else {
             hasMore = false
         }
     }
-    
+
     return allMessages
 }
 
@@ -959,13 +993,13 @@ export async function sendMessage(
         `https://graph.facebook.com/v21.0/${pageId}?fields=access_token&access_token=${userAccessToken}`
     )
     const pageData = await pagesResponse.json()
-    
+
     if (pageData.error) {
         throw new Error(pageData.error.message)
     }
-    
+
     const pageAccessToken = pageData.access_token
-    
+
     // Send message using Page token
     const response = await fetch(
         `https://graph.facebook.com/v21.0/${pageId}/messages`,
@@ -980,13 +1014,13 @@ export async function sendMessage(
             })
         }
     )
-    
+
     const data = await response.json()
-    
+
     if (data.error) {
         throw new Error(data.error.message)
     }
-    
+
     return data
 }
 

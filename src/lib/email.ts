@@ -18,9 +18,9 @@ export async function sendPasswordResetEmail({ email, token }: SendPasswordReset
 
     try {
         const data = await resend.emails.send({
-            from: process.env.EMAIL_FROM || 'Laroun <noreply@resend.dev>',
+            from: process.env.EMAIL_FROM || 'GATE169 <noreply@resend.dev>',
             to: email,
-            subject: 'Reset your password - Laroun',
+            subject: 'Reset your password - GATE169',
             html: `
                 <!DOCTYPE html>
                 <html>
@@ -39,7 +39,7 @@ export async function sendPasswordResetEmail({ email, token }: SendPasswordReset
                                             <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="white" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                                         </svg>
                                     </div>
-                                    <span style="font-size: 24px; font-weight: bold; color: #111827;">Laroun</span>
+                                    <span style="font-size: 24px; font-weight: bold; color: #111827;">GATE169</span>
                                 </div>
                             </div>
 
@@ -76,7 +76,7 @@ export async function sendPasswordResetEmail({ email, token }: SendPasswordReset
 
                         <!-- Bottom Footer -->
                         <p style="color: #9ca3af; font-size: 12px; text-align: center; margin-top: 24px;">
-                            © 2024 Laroun. All rights reserved.
+                            © 2025 GATE169. All rights reserved.
                         </p>
                     </div>
                 </body>
