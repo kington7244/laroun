@@ -24,11 +24,7 @@ export default function Navbar() {
                     </Link>
                 </div>
 
-                <div className="hidden md:flex items-center space-x-8 text-sm font-medium text-gray-600">
-                    <Link href="#features" className="hover:text-blue-600 transition-colors">
-                        {t.landing.navbar.features}
-                    </Link>
-                </div>
+
 
                 <div className="flex items-center space-x-4">
                     <DropdownMenu>

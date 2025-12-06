@@ -112,66 +112,44 @@ export const translations = {
                 getStarted: "Get Started"
             },
             hero: {
-                badge: "New: Advanced Video Metrics",
-                headline: "Master Your",
-                headlineHighlight: "Facebook Ads",
-                subheadline: "Simplify your ad management with powerful analytics, real-time insights, and automated optimization tools designed for growth.",
-                startTrial: "Start Free Trial",
+                badge: "GATE169 Platform",
+                headline: "Simplify Your",
+                headlineHighlight: "Ads Management",
+                subheadline: "The all-in-one platform to manage, analyze, and scale your Facebook Ads with ease and clarity.",
+                startTrial: "Get Started Free",
                 viewDemo: "View Demo",
                 noCreditCard: "No credit card required",
                 freeTrial: "14-day free trial",
-                cancelAnytime: "Cancel anytime"
+                cancelAnytime: "Cancel anytime",
+                dashboardTitle: "Campaign Performance",
+                totalSpent: "Total Spent",
+                roas: "ROAS",
+                conversions: "Conversions"
             },
             features: {
-                title: "Features",
-                mainTitle: "Everything you need to scale your ads",
-                description: "Powerful tools designed to help you manage, optimize, and scale your advertising campaigns with ease.",
-                items: {
-                    analytics: {
-                        title: "Advanced Analytics",
-                        description: "Get deep insights into your ad performance with real-time data visualization and custom reporting."
+                title: "Why GATE169?",
+                mainTitle: "Focused on what matters",
+                description: "We cut out the clutter and give you the tools you actually need to grow.",
+                simpleItems: {
+                    one: {
+                        title: "Clear Analytics",
+                        description: "Visualize your data without spreadsheets."
                     },
-                    optimization: {
-                        title: "Automated Optimization",
-                        description: "Let our AI algorithms automatically adjust bids and targeting to maximize your ROI 24/7."
+                    two: {
+                        title: "Smart Automation",
+                        description: "Save time with automated rules."
                     },
-                    security: {
-                        title: "Enterprise Security",
-                        description: "Bank-grade encryption and role-based access control to keep your data safe and compliant."
-                    },
-                    global: {
-                        title: "Global Reach",
-                        description: "Manage campaigns across multiple regions and currencies from a single unified dashboard."
-                    },
-                    mobile: {
-                        title: "Mobile First",
-                        description: "Monitor and manage your campaigns on the go with our fully responsive mobile interface."
-                    },
-                    support: {
-                        title: "24/7 Support",
-                        description: "Our dedicated support team is always ready to help you resolve issues and optimize strategy."
+                    three: {
+                        title: "Team Collaboration",
+                        description: "Work together seamlessly."
                     }
                 }
             },
-            bento: {
-                visualData: "Visual Data",
-                report: "Report",
-                reduceErrors: "Reduce errors and increase accuracy in data reporting 🤩",
-                dataDriven: "Make data-driven decisions 🚀",
-                marketing: "Marketing",
-                sales: "Sales",
-                business: "Business",
-                realTimeTracking: "Real-time tracking results",
-                management: "Easy & convenient management of finance, invoices, payment cards 💳",
-                costOpt: "Cost optimization, performance improvement",
-                staffEfficiency: "Increase staff efficiency",
-                user: "User"
-            },
             cta: {
-                title: "Ready to scale your Facebook Ads?",
-                description: "Join thousands of marketers who are already saving time and boosting ROI with GATE169.",
-                startTrial: "Start Free Trial",
-                scheduleDemo: "Schedule Demo"
+                title: "Ready to get started?",
+                description: "Join GATE169 today.",
+                startTrial: "Start Now",
+                scheduleDemo: "Contact Sales"
             },
             footer: {
                 copyright: "© 2025 GATE169. All rights reserved.",
@@ -574,69 +552,47 @@ export const translations = {
                 getStarted: "เริ่มต้นใช้งาน"
             },
             hero: {
-                badge: "ใหม่: ข้อมูลวิดีโอเชิงลึก",
+                badge: "แพลตฟอร์ม GATE169",
                 headline: "จัดการโฆษณา",
-                headlineHighlight: "Facebook ของคุณ",
-                subheadline: "จัดการโฆษณาของคุณให้ง่ายขึ้นด้วยการวิเคราะห์ที่มีประสิทธิภาพ ข้อมูลแบบเรียลไทม์ และเครื่องมือเพิ่มประสิทธิภาพอัตโนมัติที่ออกแบบมาเพื่อการเติบโต",
-                startTrial: "เริ่มทดลองใช้ฟรี",
+                headlineHighlight: "ให้เป็นเรื่องง่าย",
+                subheadline: "แพลตฟอร์มครบวงจรที่จะช่วยคุณจัดการ วิเคราะห์ และขยายผลลัพธ์โฆษณา Facebook ของคุณด้วยความชัดเจนและง่ายดาย",
+                startTrial: "เริ่มต้นใช้งานฟรี",
                 viewDemo: "ดูตัวอย่าง",
                 noCreditCard: "ไม่ต้องใช้บัตรเครดิต",
                 freeTrial: "ทดลองใช้ฟรี 14 วัน",
-                cancelAnytime: "ยกเลิกได้ตลอดเวลา"
+                cancelAnytime: "ยกเลิกได้ตลอดเวลา",
+                dashboardTitle: "ประสิทธิภาพแคมเปญ",
+                totalSpent: "ยอดใช้จ่ายรวม",
+                roas: "ผลตอบแทน (ROAS)",
+                conversions: "คอนเวอร์ชั่น"
             },
             features: {
-                title: "ฟีเจอร์",
-                mainTitle: "ทุกสิ่งที่คุณต้องการเพื่อขยายโฆษณา",
-                description: "เครื่องมือทรงพลังที่ออกแบบมาเพื่อช่วยคุณจัดการ ปรับปรุง และขยายแคมเปญโฆษณาของคุณได้อย่างง่ายดาย",
-                items: {
-                    analytics: {
-                        title: "การวิเคราะห์ขั้นสูง",
-                        description: "รับข้อมูลเชิงลึกเกี่ยวกับประสิทธิภาพโฆษณาของคุณด้วยการแสดงข้อมูลแบบเรียลไทม์และการรายงานที่กำหนดเอง"
+                title: "ทำไมต้อง GATE169?",
+                mainTitle: "โฟกัสที่ผลลัพธ์",
+                description: "เราตัดความยุ่งยากออก และมอบเครื่องมือที่คุณจำเป็นต้องใช้จริงๆ เพื่อการเติบโต",
+                simpleItems: {
+                    one: {
+                        title: "วิเคราะห์ข้อมูลแม่นยำ",
+                        description: "เห็นภาพรวมข้อมูลของคุณชัดเจน โดยไม่ต้องพึ่งไฟล์ Excel"
                     },
-                    optimization: {
-                        title: "การปรับปรุงอัตโนมัติ",
-                        description: "ให้อัลกอริธ AI ของเราปรับการประมูลและการกำหนดเป้าหมายโดยอัตโนมัติเพื่อเพิ่ม ROI ของคุณตลอด 24 ชั่วโมง"
+                    two: {
+                        title: "ระบบอัตโนมัติอัจฉริยะ",
+                        description: "ประหยัดเวลาด้วยกฎอัตโนมัติที่ช่วยดูแลโฆษณาแทนคุณ"
                     },
-                    security: {
-                        title: "ความปลอดภัยระดับองค์กร",
-                        description: "การเข้ารหัสระดับธนาคารและการควบคุมการเข้าถึงตามบทบาทเพื่อรักษาข้อมูลของคุณให้ปลอดภัยและเป็นไปตามข้อกำหนด"
-                    },
-                    global: {
-                        title: "เข้าถึงทั่วโลก",
-                        description: "จัดการแคมเปญข้ามหลายภูมิภาคและสกุลเงินจากแดชบอร์ดเดียว"
-                    },
-                    mobile: {
-                        title: "มือถือต้องมาก่อน",
-                        description: "ติดตามและจัดการแคมเปญของคุณได้ทุกที่ด้วยอินเทอร์เฟซมือถือที่ตอบสนองได้อย่างสมบูรณ์"
-                    },
-                    support: {
-                        title: "สนับสนุน 24/7",
-                        description: "ทีมสนับสนุนเฉพาะของเราพร้อมเสมอที่จะช่วยคุณแก้ไขปัญหาและปรับกลยุทธ์"
+                    three: {
+                        title: "ทำงานร่วมกันเป็นทีม",
+                        description: "จัดการสิทธิ์และทำงานร่วมกับทีมของคุณได้อย่างราบรื่น"
                     }
                 }
             },
-            bento: {
-                visualData: "ข้อมูลภาพ",
-                report: "รายงาน",
-                reduceErrors: "ลดข้อผิดพลาดและเพิ่มความแม่นยำในการรายงานข้อมูล 🤩",
-                dataDriven: "ตัดสินใจด้วยข้อมูล 🚀",
-                marketing: "การตลาด",
-                sales: "การขาย",
-                business: "ธุรกิจ",
-                realTimeTracking: "ผลการติดตามแบบเรียลไทม์",
-                management: "จัดการการเงิน ใบแจ้งหนี้ และบัตรชำระเงินได้ง่ายและสะดวก 💳",
-                costOpt: "ลดต้นทุน เพิ่มประสิทธิภาพ",
-                staffEfficiency: "เพิ่มประสิทธิภาพพนักงาน",
-                user: "ผู้ใช้"
-            },
             cta: {
-                title: "พร้อมที่จะขยายโฆษณา Facebook ของคุณหรือยัง?",
-                description: "เข้าร่วมกับนักการตลาดนับพันที่ประหยัดเวลาและเพิ่ม ROI ด้วย GATE169",
-                startTrial: "เริ่มทดลองใช้ฟรี",
-                scheduleDemo: "นัดหมายสาธิต"
+                title: "พร้อมเริ่มต้นหรือยัง?",
+                description: "สมัครใช้งาน GATE169 วันนี้",
+                startTrial: "เริ่มเลย",
+                scheduleDemo: "ติดต่อฝ่ายขาย"
             },
             footer: {
-                copyright: "©  GATE169. สงวนลิขสิทธิ์.",
+                copyright: "© 2025 GATE169. สงวนลิขสิทธิ์.",
                 privacy: "นโยบายความเป็นส่วนตัว",
                 terms: "เงื่อนไขการให้บริการ",
                 contact: "ติดต่อเรา"
