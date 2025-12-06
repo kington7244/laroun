@@ -2,8 +2,12 @@
 
 import { Button } from "@/components/ui/button"
 import { CheckCircle2, PlayCircle } from "lucide-react"
+import { useLanguage } from "@/contexts/LanguageContext"
+import Link from "next/link"
 
 export default function HeroSection() {
+    const { t } = useLanguage()
+
     return (
         <section className="relative pt-20 pb-32 px-4 overflow-hidden">
             <div className="max-w-4xl mx-auto text-center relative z-10">
@@ -11,30 +15,31 @@ export default function HeroSection() {
                 {/* Badge */}
                 <div className="inline-flex items-center gap-2 bg-blue-50 border border-blue-100 rounded-full px-4 py-1.5 mb-8 animate-fade-in-up">
                     <div className="w-2 h-2 rounded-full bg-blue-600"></div>
-                    <span className="text-sm font-medium text-blue-600">New: Advanced Video Metrics</span>
+                    <span className="text-sm font-medium text-blue-600">{t.landing.hero.badge}</span>
                 </div>
 
                 {/* Headline */}
                 <h1 className="text-5xl md:text-7xl font-black text-gray-900 tracking-tight mb-6 leading-tight animate-fade-in-up delay-100">
-                    Master Your <br />
+                    {t.landing.hero.headline} <br />
                     <span className="bg-clip-text text-transparent bg-gradient-to-r from-blue-600 to-cyan-400">
-                        Facebook Ads
+                        {t.landing.hero.headlineHighlight}
                     </span>
                 </h1>
 
                 {/* Subheadline */}
                 <p className="text-xl text-gray-600 mb-10 max-w-2xl mx-auto leading-relaxed animate-fade-in-up delay-200">
-                    Simplify your ad management with powerful analytics, real-time insights,
-                    and automated optimization tools designed for growth.
+                    {t.landing.hero.subheadline}
                 </p>
 
                 {/* CTA Buttons */}
                 <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-12 animate-fade-in-up delay-300">
-                    <Button className="h-12 px-8 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg shadow-blue-500/30 transition-all hover:scale-105">
-                        Start Free Trial <span className="ml-2">→</span>
-                    </Button>
+                    <Link href="/register">
+                        <Button className="h-12 px-8 text-lg bg-blue-600 hover:bg-blue-700 text-white rounded-lg shadow-lg shadow-blue-500/30 transition-all hover:scale-105">
+                            {t.landing.hero.startTrial} <span className="ml-2">→</span>
+                        </Button>
+                    </Link>
                     <Button variant="outline" className="h-12 px-8 text-lg bg-white hover:bg-gray-50 text-gray-700 border-gray-200 rounded-lg transition-all hover:scale-105">
-                        View Demo
+                        {t.landing.hero.viewDemo}
                     </Button>
                 </div>
 
@@ -42,15 +47,15 @@ export default function HeroSection() {
                 <div className="flex flex-wrap items-center justify-center gap-6 md:gap-12 text-sm font-medium text-gray-500 animate-fade-in-up delay-400">
                     <div className="flex items-center gap-2">
                         <CheckCircle2 className="text-green-500 w-5 h-5" />
-                        <span>No credit card required</span>
+                        <span>{t.landing.hero.noCreditCard}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <CheckCircle2 className="text-green-500 w-5 h-5" />
-                        <span>14-day free trial</span>
+                        <span>{t.landing.hero.freeTrial}</span>
                     </div>
                     <div className="flex items-center gap-2">
                         <CheckCircle2 className="text-green-500 w-5 h-5" />
-                        <span>Cancel anytime</span>
+                        <span>{t.landing.hero.cancelAnytime}</span>
                     </div>
                 </div>
             </div>

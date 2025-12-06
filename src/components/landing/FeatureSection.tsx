@@ -8,38 +8,41 @@ import {
     Smartphone,
     MessageSquare
 } from "lucide-react"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 export default function FeatureSection() {
+    const { t } = useLanguage()
+
     const features = [
         {
             icon: <BarChart3 className="w-6 h-6 text-blue-600" />,
-            title: "Advanced Analytics",
-            description: "Get deep insights into your ad performance with real-time data visualization and custom reporting."
+            title: t.landing.features.items.analytics.title,
+            description: t.landing.features.items.analytics.description
         },
         {
             icon: <Zap className="w-6 h-6 text-blue-600" />,
-            title: "Automated Optimization",
-            description: "Let our AI algorithms automatically adjust bids and targeting to maximize your ROI 24/7."
+            title: t.landing.features.items.optimization.title,
+            description: t.landing.features.items.optimization.description
         },
         {
             icon: <ShieldCheck className="w-6 h-6 text-blue-600" />,
-            title: "Enterprise Security",
-            description: "Bank-grade encryption and role-based access control to keep your data safe and compliant."
+            title: t.landing.features.items.security.title,
+            description: t.landing.features.items.security.description
         },
         {
             icon: <Globe2 className="w-6 h-6 text-blue-600" />,
-            title: "Global Reach",
-            description: "Manage campaigns across multiple regions and currencies from a single unified dashboard."
+            title: t.landing.features.items.global.title,
+            description: t.landing.features.items.global.description
         },
         {
             icon: <Smartphone className="w-6 h-6 text-blue-600" />,
-            title: "Mobile First",
-            description: "Monitor and manage your campaigns on the go with our fully responsive mobile interface."
+            title: t.landing.features.items.mobile.title,
+            description: t.landing.features.items.mobile.description
         },
         {
             icon: <MessageSquare className="w-6 h-6 text-blue-600" />,
-            title: "24/7 Support",
-            description: "Our dedicated support team is always ready to help you resolve issues and optimize strategy."
+            title: t.landing.features.items.support.title,
+            description: t.landing.features.items.support.description
         }
     ]
 
@@ -50,12 +53,12 @@ export default function FeatureSection() {
 
             <div className="max-w-7xl mx-auto px-6 relative z-10">
                 <div className="text-center max-w-3xl mx-auto mb-16">
-                    <h2 className="text-blue-600 font-semibold tracking-wide uppercase text-sm mb-3">Features</h2>
+                    <h2 className="text-blue-600 font-semibold tracking-wide uppercase text-sm mb-3">{t.landing.features.title}</h2>
                     <h3 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6">
-                        Everything you need to scale your ads
+                        {t.landing.features.mainTitle}
                     </h3>
                     <p className="text-xl text-gray-600">
-                        Powerful tools designed to help you manage, optimize, and scale your advertising campaigns with ease.
+                        {t.landing.features.description}
                     </p>
                 </div>
 

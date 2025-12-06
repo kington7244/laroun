@@ -112,9 +112,60 @@ export const translations = {
                 getStarted: "Get Started"
             },
             hero: {
+                badge: "New: Advanced Video Metrics",
+                headline: "Master Your",
+                headlineHighlight: "Facebook Ads",
+                subheadline: "Simplify your ad management with powerful analytics, real-time insights, and automated optimization tools designed for growth.",
+                startTrial: "Start Free Trial",
+                viewDemo: "View Demo",
                 noCreditCard: "No credit card required",
                 freeTrial: "14-day free trial",
                 cancelAnytime: "Cancel anytime"
+            },
+            features: {
+                title: "Features",
+                mainTitle: "Everything you need to scale your ads",
+                description: "Powerful tools designed to help you manage, optimize, and scale your advertising campaigns with ease.",
+                items: {
+                    analytics: {
+                        title: "Advanced Analytics",
+                        description: "Get deep insights into your ad performance with real-time data visualization and custom reporting."
+                    },
+                    optimization: {
+                        title: "Automated Optimization",
+                        description: "Let our AI algorithms automatically adjust bids and targeting to maximize your ROI 24/7."
+                    },
+                    security: {
+                        title: "Enterprise Security",
+                        description: "Bank-grade encryption and role-based access control to keep your data safe and compliant."
+                    },
+                    global: {
+                        title: "Global Reach",
+                        description: "Manage campaigns across multiple regions and currencies from a single unified dashboard."
+                    },
+                    mobile: {
+                        title: "Mobile First",
+                        description: "Monitor and manage your campaigns on the go with our fully responsive mobile interface."
+                    },
+                    support: {
+                        title: "24/7 Support",
+                        description: "Our dedicated support team is always ready to help you resolve issues and optimize strategy."
+                    }
+                }
+            },
+            bento: {
+                visualData: "Visual Data",
+                report: "Report",
+                reduceErrors: "Reduce errors and increase accuracy in data reporting 🤩",
+                dataDriven: "Make data-driven decisions 🚀",
+                marketing: "Marketing",
+                sales: "Sales",
+                business: "Business",
+                realTimeTracking: "Real-time tracking results",
+                management: "Easy & convenient management of finance, invoices, payment cards 💳",
+                costOpt: "Cost optimization, performance improvement",
+                staffEfficiency: "Increase staff efficiency",
+                user: "User"
             },
             cta: {
                 title: "Ready to scale your Facebook Ads?",
@@ -523,9 +574,60 @@ export const translations = {
                 getStarted: "เริ่มต้นใช้งาน"
             },
             hero: {
+                badge: "ใหม่: ข้อมูลวิดีโอเชิงลึก",
+                headline: "จัดการโฆษณา",
+                headlineHighlight: "Facebook ของคุณ",
+                subheadline: "จัดการโฆษณาของคุณให้ง่ายขึ้นด้วยการวิเคราะห์ที่มีประสิทธิภาพ ข้อมูลแบบเรียลไทม์ และเครื่องมือเพิ่มประสิทธิภาพอัตโนมัติที่ออกแบบมาเพื่อการเติบโต",
+                startTrial: "เริ่มทดลองใช้ฟรี",
+                viewDemo: "ดูตัวอย่าง",
                 noCreditCard: "ไม่ต้องใช้บัตรเครดิต",
                 freeTrial: "ทดลองใช้ฟรี 14 วัน",
                 cancelAnytime: "ยกเลิกได้ตลอดเวลา"
+            },
+            features: {
+                title: "ฟีเจอร์",
+                mainTitle: "ทุกสิ่งที่คุณต้องการเพื่อขยายโฆษณา",
+                description: "เครื่องมือทรงพลังที่ออกแบบมาเพื่อช่วยคุณจัดการ ปรับปรุง และขยายแคมเปญโฆษณาของคุณได้อย่างง่ายดาย",
+                items: {
+                    analytics: {
+                        title: "การวิเคราะห์ขั้นสูง",
+                        description: "รับข้อมูลเชิงลึกเกี่ยวกับประสิทธิภาพโฆษณาของคุณด้วยการแสดงข้อมูลแบบเรียลไทม์และการรายงานที่กำหนดเอง"
+                    },
+                    optimization: {
+                        title: "การปรับปรุงอัตโนมัติ",
+                        description: "ให้อัลกอริธ AI ของเราปรับการประมูลและการกำหนดเป้าหมายโดยอัตโนมัติเพื่อเพิ่ม ROI ของคุณตลอด 24 ชั่วโมง"
+                    },
+                    security: {
+                        title: "ความปลอดภัยระดับองค์กร",
+                        description: "การเข้ารหัสระดับธนาคารและการควบคุมการเข้าถึงตามบทบาทเพื่อรักษาข้อมูลของคุณให้ปลอดภัยและเป็นไปตามข้อกำหนด"
+                    },
+                    global: {
+                        title: "เข้าถึงทั่วโลก",
+                        description: "จัดการแคมเปญข้ามหลายภูมิภาคและสกุลเงินจากแดชบอร์ดเดียว"
+                    },
+                    mobile: {
+                        title: "มือถือต้องมาก่อน",
+                        description: "ติดตามและจัดการแคมเปญของคุณได้ทุกที่ด้วยอินเทอร์เฟซมือถือที่ตอบสนองได้อย่างสมบูรณ์"
+                    },
+                    support: {
+                        title: "สนับสนุน 24/7",
+                        description: "ทีมสนับสนุนเฉพาะของเราพร้อมเสมอที่จะช่วยคุณแก้ไขปัญหาและปรับกลยุทธ์"
+                    }
+                }
+            },
+            bento: {
+                visualData: "ข้อมูลภาพ",
+                report: "รายงาน",
+                reduceErrors: "ลดข้อผิดพลาดและเพิ่มความแม่นยำในการรายงานข้อมูล 🤩",
+                dataDriven: "ตัดสินใจด้วยข้อมูล 🚀",
+                marketing: "การตลาด",
+                sales: "การขาย",
+                business: "ธุรกิจ",
+                realTimeTracking: "ผลการติดตามแบบเรียลไทม์",
+                management: "จัดการการเงิน ใบแจ้งหนี้ และบัตรชำระเงินได้ง่ายและสะดวก 💳",
+                costOpt: "ลดต้นทุน เพิ่มประสิทธิภาพ",
+                staffEfficiency: "เพิ่มประสิทธิภาพพนักงาน",
+                user: "ผู้ใช้"
             },
             cta: {
                 title: "พร้อมที่จะขยายโฆษณา Facebook ของคุณหรือยัง?",

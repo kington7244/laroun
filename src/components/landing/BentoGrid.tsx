@@ -10,8 +10,10 @@ import {
     ArrowUp,
     TrendingUp
 } from "lucide-react"
+import { useLanguage } from "@/contexts/LanguageContext"
 
 export default function BentoGrid() {
+    const { t } = useLanguage()
     return (
         <section className="py-8 px-4 md:px-8 max-w-[1400px] mx-auto">
             <style jsx>{`
@@ -44,17 +46,17 @@ export default function BentoGrid() {
                             <div className="bg-cyan-400 p-2 rounded-full text-white">
                                 <LayoutGrid size={20} />
                             </div>
-                            <span className="font-semibold text-gray-700">Visual Data</span>
+                            <span className="font-semibold text-gray-700">{t.landing.bento.visualData}</span>
                         </div>
                     </Card>
 
                     {/* Report Card */}
                     <Card className="p-6 bg-white/80 backdrop-blur-sm border-none shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex-1 flex flex-col justify-between min-h-[280px] animate-fade-in-up delay-100">
                         <div className="flex justify-center mb-4">
-                            <span className="bg-cyan-100 text-cyan-600 text-xs font-bold px-3 py-1 rounded-full">Report</span>
+                            <span className="bg-cyan-100 text-cyan-600 text-xs font-bold px-3 py-1 rounded-full">{t.landing.bento.report}</span>
                         </div>
                         <p className="text-center text-gray-600 font-medium mb-6">
-                            Reduce errors and increase accuracy in data reporting 🤩
+                            {t.landing.bento.reduceErrors}
                         </p>
                         <div className="bg-blue-500 rounded-xl p-4 relative overflow-hidden h-32 flex items-end justify-center gap-2">
                             {/* Abstract Chart UI */}
@@ -85,7 +87,7 @@ export default function BentoGrid() {
                     {/* Data Driven Card */}
                     <Card className="p-6 bg-white/80 backdrop-blur-sm border-none shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-48 flex flex-col items-center justify-center animate-fade-in-up delay-200">
                         <p className="text-center text-gray-700 font-medium mb-4">
-                            Make data-driven decisions 🚀
+                            {t.landing.bento.dataDriven}
                         </p>
                         <div className="grid grid-cols-6 gap-2">
                             {[...Array(12)].map((_, i) => (
@@ -114,7 +116,7 @@ export default function BentoGrid() {
                                         <Megaphone size={28} />
                                     </div>
                                     <div className="bg-pink-500 text-white text-sm font-bold px-6 py-1.5 rounded-full shadow-lg shadow-pink-200">
-                                        Marketing
+                                        {t.landing.bento.marketing}
                                     </div>
                                 </div>
                             </div>
@@ -132,7 +134,7 @@ export default function BentoGrid() {
                                         <ShoppingCart size={28} />
                                     </div>
                                     <div className="bg-blue-500 text-white text-sm font-bold px-6 py-1.5 rounded-full shadow-lg shadow-blue-200">
-                                        Sales
+                                        {t.landing.bento.sales}
                                     </div>
                                 </div>
                             </div>
@@ -157,60 +159,60 @@ export default function BentoGrid() {
                                             <svg viewBox="0 0 100 100" className="w-full h-full">
                                                 <defs>
                                                     <linearGradient id="skinGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                        <stop offset="0%" stopColor="#FFE0BD"/>
-                                                        <stop offset="100%" stopColor="#FFCD94"/>
+                                                        <stop offset="0%" stopColor="#FFE0BD" />
+                                                        <stop offset="100%" stopColor="#FFCD94" />
                                                     </linearGradient>
                                                     <linearGradient id="hairGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                                                        <stop offset="0%" stopColor="#2D3748"/>
-                                                        <stop offset="100%" stopColor="#1A202C"/>
+                                                        <stop offset="0%" stopColor="#2D3748" />
+                                                        <stop offset="100%" stopColor="#1A202C" />
                                                     </linearGradient>
                                                     <linearGradient id="shirtGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-                                                        <stop offset="0%" stopColor="#3B82F6"/>
-                                                        <stop offset="100%" stopColor="#1D4ED8"/>
+                                                        <stop offset="0%" stopColor="#3B82F6" />
+                                                        <stop offset="100%" stopColor="#1D4ED8" />
                                                     </linearGradient>
                                                     <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-                                                        <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.2"/>
+                                                        <feDropShadow dx="0" dy="2" stdDeviation="2" floodOpacity="0.2" />
                                                     </filter>
                                                 </defs>
-                                                
+
                                                 {/* Background */}
-                                                <circle cx="50" cy="50" r="50" fill="url(#skinGrad)" opacity="0"/>
-                                                
+                                                <circle cx="50" cy="50" r="50" fill="url(#skinGrad)" opacity="0" />
+
                                                 {/* Body/Shirt */}
-                                                <path d="M20 95 Q20 70 50 65 Q80 70 80 95" fill="url(#shirtGrad)" filter="url(#shadow)"/>
-                                                
+                                                <path d="M20 95 Q20 70 50 65 Q80 70 80 95" fill="url(#shirtGrad)" filter="url(#shadow)" />
+
                                                 {/* Neck */}
-                                                <rect x="42" y="55" width="16" height="12" fill="url(#skinGrad)"/>
-                                                
+                                                <rect x="42" y="55" width="16" height="12" fill="url(#skinGrad)" />
+
                                                 {/* Head */}
-                                                <ellipse cx="50" cy="40" rx="22" ry="24" fill="url(#skinGrad)" filter="url(#shadow)"/>
-                                                
+                                                <ellipse cx="50" cy="40" rx="22" ry="24" fill="url(#skinGrad)" filter="url(#shadow)" />
+
                                                 {/* Hair - Modern Style */}
-                                                <path d="M28 35 Q28 15 50 12 Q72 15 72 35 Q70 25 50 22 Q30 25 28 35" fill="url(#hairGrad)"/>
-                                                <path d="M28 35 Q25 40 28 45 L30 38 Z" fill="url(#hairGrad)"/>
-                                                <path d="M72 35 Q75 40 72 45 L70 38 Z" fill="url(#hairGrad)"/>
-                                                
+                                                <path d="M28 35 Q28 15 50 12 Q72 15 72 35 Q70 25 50 22 Q30 25 28 35" fill="url(#hairGrad)" />
+                                                <path d="M28 35 Q25 40 28 45 L30 38 Z" fill="url(#hairGrad)" />
+                                                <path d="M72 35 Q75 40 72 45 L70 38 Z" fill="url(#hairGrad)" />
+
                                                 {/* Eyebrows */}
-                                                <path d="M36 32 Q40 30 44 32" stroke="#2D3748" strokeWidth="2" fill="none" strokeLinecap="round"/>
-                                                <path d="M56 32 Q60 30 64 32" stroke="#2D3748" strokeWidth="2" fill="none" strokeLinecap="round"/>
-                                                
+                                                <path d="M36 32 Q40 30 44 32" stroke="#2D3748" strokeWidth="2" fill="none" strokeLinecap="round" />
+                                                <path d="M56 32 Q60 30 64 32" stroke="#2D3748" strokeWidth="2" fill="none" strokeLinecap="round" />
+
                                                 {/* Eyes */}
-                                                <ellipse cx="40" cy="38" rx="5" ry="4" fill="white"/>
-                                                <ellipse cx="60" cy="38" rx="5" ry="4" fill="white"/>
-                                                <circle cx="41" cy="38" r="2.5" fill="#1E3A5F"/>
-                                                <circle cx="61" cy="38" r="2.5" fill="#1E3A5F"/>
-                                                <circle cx="42" cy="37" r="1" fill="white"/>
-                                                <circle cx="62" cy="37" r="1" fill="white"/>
-                                                
+                                                <ellipse cx="40" cy="38" rx="5" ry="4" fill="white" />
+                                                <ellipse cx="60" cy="38" rx="5" ry="4" fill="white" />
+                                                <circle cx="41" cy="38" r="2.5" fill="#1E3A5F" />
+                                                <circle cx="61" cy="38" r="2.5" fill="#1E3A5F" />
+                                                <circle cx="42" cy="37" r="1" fill="white" />
+                                                <circle cx="62" cy="37" r="1" fill="white" />
+
                                                 {/* Nose */}
-                                                <path d="M50 40 L48 48 Q50 50 52 48 L50 40" fill="#FFCD94" opacity="0.6"/>
-                                                
+                                                <path d="M50 40 L48 48 Q50 50 52 48 L50 40" fill="#FFCD94" opacity="0.6" />
+
                                                 {/* Confident Smile */}
-                                                <path d="M42 52 Q50 58 58 52" stroke="#C53030" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
-                                                
+                                                <path d="M42 52 Q50 58 58 52" stroke="#C53030" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+
                                                 {/* Ears */}
-                                                <ellipse cx="28" cy="42" rx="4" ry="6" fill="url(#skinGrad)"/>
-                                                <ellipse cx="72" cy="42" rx="4" ry="6" fill="url(#skinGrad)"/>
+                                                <ellipse cx="28" cy="42" rx="4" ry="6" fill="url(#skinGrad)" />
+                                                <ellipse cx="72" cy="42" rx="4" ry="6" fill="url(#skinGrad)" />
                                             </svg>
                                         </div>
 
@@ -224,7 +226,7 @@ export default function BentoGrid() {
                                     {/* Floating User Label with Icon */}
                                     <div className="absolute top-6 right-6 bg-white px-3 py-1.5 rounded-full shadow-md flex items-center gap-1.5">
                                         <TrendingUp size={14} className="text-blue-500" />
-                                        <span className="text-xs font-semibold text-gray-700">User</span>
+                                        <span className="text-xs font-semibold text-gray-700">{t.landing.bento.user}</span>
                                     </div>
                                 </div>
                             </div>
@@ -233,8 +235,8 @@ export default function BentoGrid() {
                         {/* The Card itself */}
                         <Card className="h-full bg-blue-50/30 backdrop-blur-sm border-none shadow-sm group-hover:shadow-xl transition-all duration-300 flex flex-col items-center pt-24 pb-0 px-0 relative overflow-hidden rounded-[2rem]">
                             <div className="mt-2 text-center mb-4 px-6">
-                                <span className="text-blue-500 text-sm font-bold tracking-wide">Business</span>
-                                <h2 className="text-2xl font-bold text-gray-800 mt-1">Real-time tracking results</h2>
+                                <span className="text-blue-500 text-sm font-bold tracking-wide">{t.landing.bento.business}</span>
+                                <h2 className="text-2xl font-bold text-gray-800 mt-1">{t.landing.bento.realTimeTracking}</h2>
                             </div>
 
                             {/* Wave Chart */}
@@ -277,7 +279,7 @@ export default function BentoGrid() {
                     {/* Management Card */}
                     <Card className="p-6 bg-white/80 backdrop-blur-sm border-none shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 h-64 relative overflow-hidden animate-fade-in-up delay-400 group">
                         <p className="text-gray-700 font-medium mb-6 relative z-10">
-                            Easy & convenient management of finance, invoices, payment cards 💳
+                            {t.landing.bento.management}
                         </p>
 
                         {/* Credit Cards Stack */}
@@ -302,7 +304,7 @@ export default function BentoGrid() {
                     {/* Cost Optimization Card */}
                     <Card className="p-6 bg-white/80 backdrop-blur-sm border-none shadow-sm hover:shadow-xl transition-all duration-300 hover:-translate-y-1 flex-1 min-h-[200px] flex flex-col animate-fade-in-up delay-500">
                         <p className="text-gray-700 font-medium mb-4">
-                            Cost optimization, performance improvement
+                            {t.landing.bento.costOpt}
                         </p>
                         <div className="flex-1 flex items-end justify-center pb-4 relative">
                             {/* Gauge Chart */}
@@ -327,12 +329,12 @@ export default function BentoGrid() {
                             <div className="bg-pink-500 p-1.5 rounded-full text-white">
                                 <Users size={16} />
                             </div>
-                            <span className="font-medium text-gray-700 text-sm">Increase staff efficiency</span>
+                            <span className="font-medium text-gray-700 text-sm">{t.landing.bento.staffEfficiency}</span>
                         </div>
                     </Card>
                 </div>
 
-            </div>
-        </section>
+            </div >
+        </section >
     )
 }
